@@ -54,6 +54,13 @@ spec:
         - { port: 10250 }
         - { port: 9100 }
         - { port: 6443 }
+    # Prometheus → Envoy Gateway proxy 메트릭 (PodMonitor, 19001 /stats/prometheus)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - { port: 19001 }
     - ports:
         - port: 443 # 외부 알림 (Slack, PagerDuty 등) + kube-apiserver SD
         - port: 80

@@ -15,6 +15,10 @@ prometheus:
         serviceMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelector: {}
         serviceMonitorNamespaceSelector: {}
+        # PodMonitor 도 전부 줍기 (Envoy Gateway proxy PodMonitor 등)
+        podMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelector: {}
+        podMonitorNamespaceSelector: {}
 
 grafana:
     admin:
