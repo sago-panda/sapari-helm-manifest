@@ -10,7 +10,7 @@ metadata:
   namespace: frontend
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - name: public-gateway
       namespace: default
   hostnames:
     - sapari.ascode.click

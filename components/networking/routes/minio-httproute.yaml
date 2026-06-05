@@ -7,7 +7,7 @@ metadata:
   namespace: storage
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - name: admin-gateway
       namespace: default
   hostnames:
     - minio.ascode.click
@@ -23,7 +23,7 @@ metadata:
   namespace: storage
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - name: public-gateway # 이미지 업/다운 경로라 공개(콘솔 minio.ascode.click 은 admin 유지)
       namespace: default
   hostnames:
     - storage.ascode.click

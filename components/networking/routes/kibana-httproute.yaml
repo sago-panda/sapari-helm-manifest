@@ -9,7 +9,7 @@ metadata:
   namespace: monitoring
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - name: admin-gateway
       namespace: default
   hostnames:
     - kibana.ascode.click

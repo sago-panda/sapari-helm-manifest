@@ -6,7 +6,7 @@ metadata:
   namespace: cicd
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - name: admin-gateway
       namespace: default
   hostnames: [argocd.ascode.click]
   rules:

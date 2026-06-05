@@ -1,8 +1,10 @@
 # components/networking/gateway/gateway.yaml
-# Envoy Gateway 의 GatewayClass + Gateway (MetalLB LB IP 192.168.123.200).
-# 전제: envoy-gateway 컨트롤러와 MetalLB 는 클러스터에 이미 설치되어 있어야 한다
-#       (envoy-gateway-system / metallb-system 은 GitOps 범위 밖, 부트스트랩 단계).
-# TLS 는 Cloudflare/Gateway 종단 → 내부는 http(80).
+# 공개(public) / 내부관리(admin) 2-게이트웨이 분리. 각자 독립 Envoy fleet + MetalLB IP.
+#   - public-gateway  : sapari.ascode.click (frontend + 향후 backend /api)  → 192.168.123.201
+#   - admin-gateway   : argocd/grafana/kibana/vault/minio (Cloudflare Access) → 192.168.123.202
+# IP 고정: spec.infrastructure.annotations 가 proxy LoadBalancer Service 에 전파 → MetalLB 가 그 IP 할당.
+# 전제: envoy-gateway + MetalLB(pool 192.168.123.200-210) 는 이미 설치(부트스트랩, GitOps 밖).
+# ※ Cloudflare Tunnel(105 호스트)에서 각 호스트를 해당 게이트웨이 IP 로 라우팅해야 함(외부 작업).
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
@@ -13,10 +15,17 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: homelab-gateway
+  name: public-gateway
   namespace: default
 spec:
   gatewayClassName: eg
+  infrastructure:
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: "192.168.123.201"
+    parametersRef: # public 만 HA(replicas 2) — 아래 EnvoyProxy 참조 (admin 은 기본 1)
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: public-proxy
   listeners:
     - name: http
       protocol: HTTP
@@ -26,6 +35,39 @@ spec:
           from: Selector
           selector:
             matchExpressions:
-              - key: kubernetes.io/metadata.name
-                operator: In
-                values: [storage, monitoring, security, cicd, ingress, frontend]
+              # storage = minio-s3(storage.ascode.click, 이미지 업/다운 공개), 향후 backend 추가
+              - { key: kubernetes.io/metadata.name, operator: In, values: [frontend, storage] }
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: admin-gateway
+  namespace: default
+spec:
+  gatewayClassName: eg
+  infrastructure:
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: "192.168.123.202"
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchExpressions:
+              - { key: kubernetes.io/metadata.name, operator: In, values: [cicd, monitoring, security, storage] }
+---
+# public-gateway 전용 — HA(replicas 2). admin 은 EnvoyProxy 미참조 → 기본 1.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: public-proxy
+  namespace: default # Gateway(infrastructure.parametersRef)와 같은 ns
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 2
