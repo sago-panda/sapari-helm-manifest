@@ -6,14 +6,14 @@ kind: Deployment
 metadata:
   name: frontend
   namespace: frontend
-  labels: { app: frontend }
+  labels: {app: frontend}
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: frontend }
+    matchLabels: {app: frontend}
   template:
     metadata:
-      labels: { app: frontend }
+      labels: {app: frontend}
     spec:
       automountServiceAccountToken: false # 프론트는 k8s API 호출 안 함 → 토큰 제거
       imagePullSecrets:
@@ -22,28 +22,28 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534
         runAsGroup: 65534
-        seccompProfile: { type: RuntimeDefault }
+        seccompProfile: {type: RuntimeDefault}
       containers:
         - name: web
-          image: registry.gitlab.com/sagopanda/sapari-fe:main # ← CI(bump)가 @sha256:digest 로 갱신
+          image: registry.gitlab.com/sagopanda/sapari-fe@sha256:258a7fe59d39c2e599e8eb1cb17cdc72da3119bf4c956c8fe24e9e964feadaf4 # ← CI(bump)가 @sha256:digest 로 갱신
           ports:
-            - { name: http, containerPort: 8080 }
+            - {name: http, containerPort: 8080}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true # SWS 는 디스크에 안 씀 → emptyDir 불필요
-            capabilities: { drop: ["ALL"] }
+            capabilities: {drop: ["ALL"]}
           resources:
-            requests: { cpu: "10m", memory: "16Mi" }
-            limits: { cpu: "200m", memory: "64Mi" }
+            requests: {cpu: "10m", memory: "16Mi"}
+            limits: {cpu: "200m", memory: "64Mi"}
           readinessProbe:
-            httpGet: { path: /, port: 8080 }
+            httpGet: {path: /, port: 8080}
             initialDelaySeconds: 2
           livenessProbe:
-            httpGet: { path: /, port: 8080 }
+            httpGet: {path: /, port: 8080}
             periodSeconds: 20
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
-            matchLabels: { app: frontend }
+            matchLabels: {app: frontend}
