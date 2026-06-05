@@ -12,6 +12,8 @@ spec:
     repoURL: https://helm.elastic.co
     chart: eck-operator
     targetRevision: 3.4.0
+    helm:
+      releaseName: elastic-operator # 수동 설치 release 이름과 일치 → 기존 오퍼레이터 adopt(롤아웃 방지)
   destination:
     server: https://kubernetes.default.svc
     namespace: elastic-system

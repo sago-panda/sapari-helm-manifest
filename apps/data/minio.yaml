@@ -14,6 +14,7 @@ spec:
       chart: tenant
       targetRevision: 7.1.1
       helm:
+        releaseName: myminio # 수동 설치 release 이름과 일치 → 기존 Tenant 리소스 adopt
         valueFiles:
           - $values/components/data/minio/values.yaml
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git

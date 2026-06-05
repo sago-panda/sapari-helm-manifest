@@ -12,6 +12,8 @@ spec:
     repoURL: https://cloudnative-pg.github.io/charts
     chart: cloudnative-pg
     targetRevision: 0.28.2
+    helm:
+      releaseName: cnpg # 수동 설치 release 이름과 일치 → 기존 오퍼레이터 adopt(롤아웃 방지)
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system

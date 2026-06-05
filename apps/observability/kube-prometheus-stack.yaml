@@ -14,6 +14,7 @@ spec:
       chart: kube-prometheus-stack
       targetRevision: 86.0.1
       helm:
+        releaseName: kube-prometheus # 수동 설치 release 이름과 일치 → 기존 리소스 adopt(중복/롤아웃 방지)
         valueFiles:
           - $values/components/observability/kube-prometheus-stack/values.yaml
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git

@@ -12,6 +12,8 @@ spec:
     repoURL: https://strimzi.io/charts/
     chart: strimzi-kafka-operator
     targetRevision: 1.0.0
+    helm:
+      releaseName: strimzi-operator # 수동 설치 release 이름과 일치 → 기존 오퍼레이터 adopt(롤아웃 방지)
   destination:
     server: https://kubernetes.default.svc
     namespace: storage
