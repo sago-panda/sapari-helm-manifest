@@ -42,6 +42,9 @@ dex:
   enabled: false # SSO 안 쓰면 끔 (자원 절약)
 
 configs:
+  cm:
+    timeout.reconciliation: 240s # git 폴링 주기 (기본 180s → 240s, repo-server 부하 완화)
+    timeout.reconciliation.jitter: 60s # 동시 폭주 방지 지터
   params:
     server.insecure: true # Gateway 뒤 http
   rbac:
