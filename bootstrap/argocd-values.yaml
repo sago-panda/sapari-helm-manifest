@@ -16,14 +16,18 @@ server:
     limits: { cpu: 500m, memory: 512Mi }
 
 controller:
+  # 라이브 리소스 캐시+diff 담당 = 리소스 개수에 비례해 메모리 증가. 1Gi에서 OOMKilled(exit137, 사용량 914Mi/CPU 884m).
+  # 단일 클러스터라 샤딩(replica)으로는 분담 불가 → 수직 확장(메모리·CPU)만 유효.
   resources:
-    requests: { cpu: 250m, memory: 512Mi }
-    limits: { cpu: 1, memory: 1Gi }
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: 2, memory: 2Gi }
 
 repoServer:
+  # 대형 Helm 차트(kube-prometheus-stack 등) 렌더 시 512Mi로는 OOMKilled(exit137) → 메모리 상향.
+  # 증상: repo-server CrashLoopBackOff → application-controller가 :8081 i/o timeout → sync=Unknown.
   resources:
-    requests: { cpu: 100m, memory: 128Mi }
-    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 2Gi }
 
 applicationSet:
   resources:
