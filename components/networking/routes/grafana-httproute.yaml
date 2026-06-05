@@ -1,0 +1,19 @@
+# ingress/grafana-httproute.yaml
+# Grafana 를 homelab-gateway(Envoy Gateway, MetalLB 192.168.123.200) 로 노출.
+# 서비스명: kube-prometheus-grafana:80 (release 이름 kube-prometheus 기준).
+# TLS는 Cloudflare/Gateway 종단 → 내부 http.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: default
+  hostnames:
+    - grafana.ascode.click
+  rules:
+    - backendRefs:
+        - name: kube-prometheus-grafana
+          port: 80

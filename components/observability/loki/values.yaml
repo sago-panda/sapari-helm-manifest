@@ -1,0 +1,60 @@
+# monitoring/loki-values.yaml  (chart: grafana/loki)
+# 홈랩용 경량 — SingleBinary 1대, 청크는 MinIO(S3)에 저장(이미 만든 loki-* 버킷 사용).
+# ※ grafana/loki 차트는 버전마다 키가 바뀜 → `helm show values grafana/loki --version <ver>`로 교차확인.
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false # 내부 전용 (멀티테넌시 끔)
+  commonConfig:
+    replication_factor: 1
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: s3
+        schema: v13
+        index: { prefix: index_, period: 24h }
+  storage:
+    type: s3
+    bucketNames:
+      chunks: loki-chunks
+      ruler: loki-ruler
+      admin: loki-admin
+    s3:
+      endpoint: minio.storage.svc.cluster.local:80 # MinIO S3 (내부)
+      region: us-east-1
+      s3ForcePathStyle: true
+      insecure: true # http (내부)
+      accessKeyId: ${MINIO_ACCESS_KEY} # extraEnvFrom + expand-env 로 주입
+      secretAccessKey: ${MINIO_SECRET_KEY}
+  limits_config:
+    retention_period: 168h # 7일 (실제 삭제는 compactor 필요 — 아래)
+  compactor:
+    retention_enabled: true
+    delete_request_store: s3
+
+singleBinary:
+  replicas: 1
+  extraArgs:
+    - "-config.expand-env=true" # config의 ${MINIO_*} 치환 활성화
+  extraEnvFrom:
+    - secretRef: { name: loki-minio } # ① ESO secret
+  persistence:
+    enabled: true
+    storageClass: longhorn-prod # WAL/로컬 인덱스용 (소량). 청크는 MinIO라 작게 OK
+    size: 5Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 1, memory: 1Gi }
+  nodeSelector:
+    role: application
+
+# 경량화 — 분산 컴포넌트/캐시/게이트웨이 끔 (SingleBinary면 불필요)
+read: { replicas: 0 }
+write: { replicas: 0 }
+backend: { replicas: 0 }
+chunksCache: { enabled: false }
+resultsCache: { enabled: false }
+gateway: { enabled: false }
+lokiCanary: { enabled: false }
+test: { enabled: false }

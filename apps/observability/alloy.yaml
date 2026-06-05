@@ -1,0 +1,27 @@
+# apps/observability/alloy.yaml — [Helm형 leaf] 차트=helm repo, values=git(멀티소스)
+# Grafana Alloy DaemonSet (파드 로그 수집 → Loki)
+# values 한 줄만 고쳐 push 해도 ref:values 소스가 새 커밋으로 추적 → 자동 재렌더·sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: cicd
+  labels: { category: observability }
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.8.1
+      helm:
+        valueFiles:
+          - $values/components/observability/alloy/values.yaml
+    - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

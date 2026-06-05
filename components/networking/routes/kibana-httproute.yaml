@@ -1,0 +1,19 @@
+# ingress/kibana-httproute.yaml
+# Kibana(ECK) 를 homelab-gateway(Envoy Gateway, MetalLB 192.168.123.200) 로 노출.
+# ECK 서비스 이름은 kibana-kb-http (클래식 kibana-kibana 아님).
+# TLS는 Cloudflare/Gateway에서 종단 → 내부는 http 5601.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: kibana-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: default
+  hostnames:
+    - kibana.ascode.click
+  rules:
+    - backendRefs:
+        - name: kibana-kb-http
+          port: 5601

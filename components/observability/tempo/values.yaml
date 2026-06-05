@@ -1,0 +1,38 @@
+# monitoring/tempo-values.yaml  (chart: grafana/tempo — monolithic)
+# 홈랩용 단일 바이너리 Tempo. 트레이스 블록은 MinIO(tempo-traces), 앱은 OTLP로 전송.
+# ※ grafana/tempo 차트는 버전마다 키가 다름 → `helm show values grafana/tempo --version <ver>` 확인.
+tempo:
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tempo-traces
+        endpoint: minio.storage.svc.cluster.local:80
+        # access_key/secret_key 생략 → Tempo가 AWS_* env(extraEnvFrom)에서 자동 인식
+        insecure: true # http (내부)
+        forcepathstyle: true
+  # OTLP 수신 (앱이 여기로 트레이스 전송)
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+  retention: 168h # 7일
+
+  # MinIO 자격을 AWS_* env로 주입 (Tempo S3 클라이언트가 자동 사용 — expand-env 불필요)
+  extraEnvFrom:
+    - secretRef: {name: tempo-minio}
+
+persistence:
+  enabled: true
+  storageClassName: longhorn-prod # WAL/로컬 (소량, 블록은 MinIO)
+  size: 5Gi
+
+resources:
+  requests: {cpu: 100m, memory: 256Mi}
+  limits: {cpu: 1, memory: 1Gi}
+
+nodeSelector:
+  role: application

@@ -1,0 +1,68 @@
+# netpol/storage-netpol.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: storage-netpol
+  namespace: storage
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cicd
+    - from:
+        - podSelector: {} # storage 내부 replication 허용
+    # envoy-gateway 에서 들어오는 HTTPRoute 트래픽 (정공법)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: external-secrets
+    # CNPG operator → 인스턴스 status(8000)/metrics 프로브. 없으면 클러스터가
+    # NotReady 로 묶여 두 번째 인스턴스가 생성되지 않음
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+    # ECK operator → Elasticsearch 파드(9200) 오케스트레이션/헬스체크
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: elastic-system
+  egress:
+    - to:
+        - podSelector: {} # storage 내부 통신
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # kube-apiserver (Service VIP 10.96.0.1:443) — operator/controller가 API 호출에 필요
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.0/12 # 기본 service CIDR
+      ports:
+        - port: 443
+          protocol: TCP
+    # 노드 IP 직접 닿을 때 (CNI에 따라 service VIP 대신 node IP로 라우팅됨)
+    - to:
+        - ipBlock:
+            cidr: 192.168.123.0/24
+      ports:
+        - port: 6443
+          protocol: TCP

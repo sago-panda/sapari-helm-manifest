@@ -1,0 +1,22 @@
+# apps/data/postgresql.yaml — [매니페스트형 leaf] git 디렉토리 적용
+# CNPG Cluster + ScheduledBackup (S3=MinIO)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgresql
+  namespace: cicd
+  labels: { category: data }
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: components/data/postgresql
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage # 매니페스트에 ns 가 있으면 그쪽으로
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

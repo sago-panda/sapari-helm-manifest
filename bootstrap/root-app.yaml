@@ -1,0 +1,27 @@
+# bootstrap/root-app.yaml
+# App of Apps 루트 (2-tier) — apps/*.yaml 의 "카테고리 부모 App"만 배포.
+# 각 카테고리 부모가 apps/<category>/ 의 leaf App들을 배포 → 콘솔에서 카테고리별 그룹.
+# 최초 1회만 kubectl apply, 이후엔 git push로 자동 반영.
+#   kubectl apply -f bootstrap/root-app.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: cicd # ArgoCD 가 cicd 네임스페이스에 설치되어 있음
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: apps
+    directory:
+      recurse: false # 최상위 apps/*.yaml(카테고리 부모)만. 하위는 각 부모가 처리
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cicd
+  syncPolicy:
+    automated:
+      prune: true # git에서 지운 App은 클러스터에서도 제거
+      selfHeal: true # 수동 변경(drift) 자동 복구
+    syncOptions:
+      - CreateNamespace=true

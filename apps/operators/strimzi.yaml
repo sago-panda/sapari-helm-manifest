@@ -1,0 +1,20 @@
+# apps/operators/strimzi.yaml — [Helm형 leaf] 차트=helm repo (기본값 설치)
+# Strimzi Kafka 오퍼레이터 (Kafka/KafkaNodePool/KafkaUser CRD, v1)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: strimzi
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  source:
+    repoURL: https://strimzi.io/charts/
+    chart: strimzi-kafka-operator
+    targetRevision: 1.0.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

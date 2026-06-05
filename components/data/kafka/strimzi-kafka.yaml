@@ -1,0 +1,82 @@
+# storage/strimzi-kafka.yaml
+# Strimzi(quay.io 이미지 — Bitnami 카탈로그 이슈와 무관)로 운영하는 Kafka.
+# KRaft 모드 + KafkaNodePool(controller+broker 겸함 3대). CNPG처럼 오퍼레이터+CRD 방식.
+# ※ apiVersion / 필드는 Strimzi 버전에 민감 → 설치한 오퍼레이터 버전의 공식 예제로 검증할 것.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: combined
+  namespace: storage
+  labels:
+    strimzi.io/cluster: kafka # 아래 Kafka 리소스 metadata.name 과 일치해야 함
+spec:
+  replicas: 3 # 홀수 3 → KRaft quorum (1대 장애 견딤)
+  roles:
+    - controller # 소규모라 controller + broker 겸함
+    - broker
+  storage:
+    type: persistent-claim
+    size: 10Gi
+    class: longhorn-single # Kafka는 앱레벨 복제 → Longhorn replica=1 (공간 절반, faulted 방지)
+    deleteClaim: false # 클러스터 삭제해도 PVC 보존 (데이터 안전)
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: 2,    memory: 2Gi }
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: kafka
+  namespace: storage
+  annotations:
+    strimzi.io/node-pools: enabled # 위 KafkaNodePool 사용
+    strimzi.io/kraft: enabled # ZooKeeper 없이 KRaft
+spec:
+  kafka:
+    version: 4.1.2 # Strimzi 1.0.0 지원 범위(4.1.0~4.2.0). 3.9.x는 미지원이라 4.1.2 사용.
+    # metadataVersion 생략 → 새 클러스터라 Strimzi가 이 Kafka 버전의 기본값으로 설정.
+    # (명시하려면 STRIMZI_KAFKA_IMAGES/문서에서 4.1 metadata version 표기 확인 후 추가)
+    # 내부 전용 SASL/SCRAM 리스너 (TLS 생략 — SCRAM은 challenge-response라 비번 평문전송 안 함)
+    listeners:
+      - name: scram
+        port: 9092
+        type: internal
+        tls: false
+        authentication:
+          type: scram-sha-512
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+    # replicas / storage 는 KafkaNodePool 에서 관리 (node-pools 활성 시 여기선 무시됨)
+  entityOperator:
+    topicOperator: {} # KafkaTopic CRD 로 토픽을 선언적으로 관리 (GitOps)
+    userOperator: {} # KafkaUser CRD 처리 (SCRAM 자격증명 발급)
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: app
+  namespace: storage
+  labels:
+    strimzi.io/cluster: kafka
+spec:
+  authentication:
+    type: scram-sha-512
+    # Vault-first: Strimzi가 비번을 자체 생성하지 않고 ESO+Vault가 만든 secret을 사용.
+    # (이 기능은 Strimzi 버전에 따라 지원 여부 다름 — 안 되면 Strimzi 생성 secret 'app' 사용)
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: kafka-app-password
+          key: password
+  authorization:
+    type: simple
+    acls:
+      - resource: { type: topic, name: "*", patternType: literal }
+        operations: [Read, Write, Describe, Create]
+      - resource: { type: group, name: "*", patternType: literal }
+        operations: [Read, Describe]

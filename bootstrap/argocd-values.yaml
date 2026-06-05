@@ -1,0 +1,49 @@
+# cicd/argocd-values.yaml  (chart: argo/argo-cd)
+# 홈랩용 — app-tier 노드 배치, TLS는 Gateway/Cloudflare에서 종단(서버는 insecure),
+# dex 비활성(SSO 대신 admin), RBAC admin/readonly.
+global:
+  nodeSelector:
+    role: application # kube-master (app-tier)
+
+# argo-cd 서버 — Gateway 뒤에서 http (TLS 종단은 게이트웨이/CF)
+server:
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+controller:
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: 1, memory: 1Gi }
+
+repoServer:
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+applicationSet:
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+
+# argo-cd 내장 redis (storage의 redis와 별개 — argocd 캐시 전용)
+redis:
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+
+dex:
+  enabled: false # SSO 안 쓰면 끔 (자원 절약)
+
+configs:
+  params:
+    server.insecure: true # Gateway 뒤 http
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      p, role:admin, applications, *, */*, allow
+      p, role:admin, clusters, *, *, allow
+      p, role:admin, repositories, *, *, allow
+      g, admin, role:admin

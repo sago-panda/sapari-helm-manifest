@@ -1,0 +1,27 @@
+# apps/data/redis.yaml — [Helm형 leaf] 차트=helm repo, values=git(멀티소스)
+# Redis replication+sentinel (bitnami). existingSecret=redis-password(ESO)
+# values 한 줄만 고쳐 push 해도 ref:values 소스가 새 커밋으로 추적 → 자동 재렌더·sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redis
+  namespace: cicd
+  labels: { category: data }
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: redis
+      targetRevision: 25.5.3
+      helm:
+        valueFiles:
+          - $values/components/data/redis/values.yaml
+    - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

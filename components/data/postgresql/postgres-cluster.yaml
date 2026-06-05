@@ -1,0 +1,65 @@
+# storage/postgres-cluster.yaml
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+  namespace: storage
+spec:
+  instances: 2
+  primaryUpdateStrategy: unsupervised
+
+  # primary/replica 양쪽 노드 분산
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      maintenance_work_mem: "64MB"
+
+  storage:
+    size: 5Gi
+    storageClass: longhorn-prod
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2
+      memory: 2Gi
+
+  backup:
+    retentionPolicy: "7d"
+    barmanObjectStore:
+      destinationPath: s3://postgres-backup
+      endpointURL: http://minio.storage.svc.cluster.local
+      s3Credentials:
+        accessKeyId:
+          name: minio-credentials
+          key: MINIO_ACCESS_KEY
+        secretAccessKey:
+          name: minio-credentials
+          key: MINIO_SECRET_KEY
+
+
+---
+
+# storage/postgres-cluster.yaml 에 이어서
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: postgres-cluster-daily
+  namespace: storage
+spec:
+  # 매일 새벽 2시 (CNPG cron은 맨 앞이 '초' — 6자리)
+  schedule: "0 0 2 * * *"
+  backupOwnerReference: self
+  method: barmanObjectStore
+  cluster:
+    name: postgres-cluster
+

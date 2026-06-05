@@ -1,0 +1,20 @@
+# apps/operators/longhorn.yaml — [Helm형 leaf] 차트=helm repo (기본값 설치)
+# Longhorn 분산 블록 스토리지 + CSI 드라이버
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  source:
+    repoURL: https://charts.longhorn.io
+    chart: longhorn
+    targetRevision: 1.11.2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

@@ -1,0 +1,19 @@
+# ingress/vault-httproute.yaml
+# Vault UI 외부 노출 (관리자만, Cloudflare Access SSO 필수)
+# 실제 svc 이름은 `kubectl -n security get svc | grep vault` 로 확인
+# 보통 vault-ui (UI 전용) 또는 vault (전체)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vault-route
+  namespace: security
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: default
+  hostnames:
+    - vault.ascode.click
+  rules:
+    - backendRefs:
+        - name: vault-ui
+          port: 8200

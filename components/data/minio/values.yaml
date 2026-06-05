@@ -1,0 +1,42 @@
+tenant:
+  name: myminio
+  pools:
+    - name: pool-0
+      servers: 2
+      volumesPerServer: 2
+      size: 10Gi
+      storageClassName: longhorn-prod
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              v1.min.io/tenant: myminio       # MinIO operator가 실제로 붙이는 라벨
+              v1.min.io/pool: pool-0
+      # podAntiAffinity로도 강제 — 같은 노드에 못 오게
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  v1.min.io/tenant: myminio
+                  v1.min.io/pool: pool-0
+              topologyKey: kubernetes.io/hostname
+  configSecret:
+    name: myminio-env-configuration
+    existingSecret: true                # ESO + Vault 에서 생성한 secret 참조
+  certificate:
+    requestAutoCert: false              # 내부 TLS 자동발급 비활성
+  features:
+    bucketDNS: true
+  metrics:
+    enabled: true
+    port: 9000

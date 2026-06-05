@@ -1,0 +1,59 @@
+# netpol/monitoring-netpol.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-netpol
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # monitoring 내부 통신 (Grafana→Prometheus, Prometheus→kube-state-metrics/alertmanager 등)
+    # 없으면 같은 ns여도 ingress가 막혀 타임아웃 (egress엔 podSelector{} 있지만 ingress엔 없었음)
+    - from:
+        - podSelector: {}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+    # ECK operator → Kibana 파드 관리/헬스체크
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: elastic-system
+    # Gateway 경유 외부 진입 (Kibana 5601 HTTPRoute)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: storage
+    - to:
+        - podSelector: {} # monitoring 내부 통신
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Prometheus 스크레이프 — 노드의 kubelet/cadvisor(10250), node-exporter(9100).
+    # host-network라 노드 IP로 접근 → 노드 CIDR 허용 필요 (없으면 노드 타겟 DOWN)
+    # 6443: kube-apiserver (service VIP가 노드:6443으로 DNAT됨). operator/SD/certgen에 필수.
+    - to:
+        - ipBlock:
+            cidr: 192.168.123.0/24
+      ports:
+        - { port: 10250 }
+        - { port: 9100 }
+        - { port: 6443 }
+    - ports:
+        - port: 443 # 외부 알림 (Slack, PagerDuty 등) + kube-apiserver SD
+        - port: 80

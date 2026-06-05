@@ -1,0 +1,50 @@
+# monitoring/prometheus-values.yaml
+prometheus:
+    prometheusSpec:
+        retention: 7d
+        resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { cpu: 2,    memory: 2Gi }
+        storageSpec:
+            volumeClaimTemplate:
+                spec:
+                    storageClassName: longhorn-prod
+                    resources:
+                        requests:
+                            storage: 5Gi
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorSelector: {}
+        serviceMonitorNamespaceSelector: {}
+
+grafana:
+    admin:
+        existingSecret: grafana-admin
+        userKey: admin-user
+        passwordKey: admin-password
+    persistence:
+        enabled: true
+        storageClassName: longhorn-prod
+        size: 1Gi
+    resources:
+        requests: { cpu: 100m, memory: 128Mi }
+        limits:   { cpu: 500m, memory: 512Mi }
+    # LGTM 데이터소스 — Grafana 한 곳에서 메트릭(Prom)+로그(Loki)+트레이스(Tempo)
+    additionalDataSources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki.monitoring.svc.cluster.local:3100
+        - name: Tempo
+          type: tempo
+          access: proxy
+          url: http://tempo.monitoring.svc.cluster.local:3200
+
+alertmanager:
+    alertmanagerSpec:
+        storage:
+            volumeClaimTemplate:
+                spec:
+                    storageClassName: longhorn-prod
+                    resources:
+                        requests:
+                            storage: 1Gi

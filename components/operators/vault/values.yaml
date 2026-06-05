@@ -1,0 +1,61 @@
+# security/vault-values.yaml
+
+# Vault Agent Injector — 켜되 'opt-in 범위 제한'으로 운영.
+#   - namespaceSelector: vault-injection=enabled 라벨 붙은 ns의 파드만 주입 대상.
+#     (기본값처럼 전 클러스터를 가로채면, injector 장애 시 모든 파드 생성이 막힘 — 실제로 겪음)
+#     → storage 등 라벨 없는 ns는 webhook이 건드리지 않음 (kafka 등 안전).
+#   - failurePolicy: Ignore → injector가 죽어도 파드 생성은 진행(가용성 우선).
+# 전제: netpol/security-netpol.yaml 에 apiserver(노드)→injector:8080 ingress 허용이 있어야
+#       라벨된 ns에서 주입이 실제로 동작함.
+# 사용법: 주입 쓸 ns에 라벨 → kubectl label namespace <ns> vault-injection=enabled
+#         파드에 vault.hashicorp.com/agent-inject 등 annotation 추가.
+injector:
+  enabled: true
+  failurePolicy: Ignore
+  namespaceSelector:
+    matchLabels:
+      vault-injection: enabled
+
+server:
+  dev:
+    enabled: false
+
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+
+      storage "file" {
+        path = "/vault/data"
+      }
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  dataStorage:
+    enabled: true
+    size: 5Gi # 라이브 STS와 일치해야 함 (volumeClaimTemplate은 불변 필드)
+    storageClass: longhorn-prod
+
+  serviceAccount:
+    create: true
+    name: vault-sa
+
+  nodeSelector:
+    role: stateful # 또는 사용 중인 노드 셀렉터
+
+ui:
+  enabled: true
+  serviceType: ClusterIP

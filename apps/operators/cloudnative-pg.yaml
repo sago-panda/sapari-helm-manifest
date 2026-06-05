@@ -1,0 +1,20 @@
+# apps/operators/cloudnative-pg.yaml — [Helm형 leaf] 차트=helm repo (기본값 설치)
+# CloudNativePG 오퍼레이터 (PostgreSQL CRD 공급)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.28.2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

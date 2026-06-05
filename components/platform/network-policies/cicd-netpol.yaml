@@ -1,0 +1,50 @@
+# netpol/cicd-netpol.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cicd-netpol
+  namespace: cicd
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # cicd 내부 통신 (argocd server↔repo-server↔redis↔controller↔applicationset)
+    # 없으면 같은 ns여도 ingress 막혀 컴포넌트가 서로 못 붙음
+    - from:
+        - podSelector: {}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+    # Gateway 경유 외부 진입 (argocd.ascode.click)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+  egress:
+    - to:
+        - podSelector: {} # cicd 내부 통신
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # kube-apiserver — ArgoCD controller가 클러스터 리소스 동기화에 필요.
+    # service VIP가 노드:6443으로 DNAT → 노드 CIDR:6443 명시 (없으면 sync 불가)
+    - to:
+        - ipBlock: { cidr: 10.96.0.0/12 }
+      ports:
+        - { port: 443, protocol: TCP }
+    - to:
+        - ipBlock: { cidr: 192.168.123.0/24 }
+      ports:
+        - { port: 6443, protocol: TCP }
+    - ports:
+        - port: 443 # GitHub, GitLab 등 외부 git repo
+        - port: 22 # SSH git

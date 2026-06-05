@@ -1,0 +1,20 @@
+# apps/operators/eck.yaml — [Helm형 leaf] 차트=helm repo (기본값 설치)
+# Elastic Cloud on Kubernetes (Elasticsearch/Kibana CRD 공급)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eck
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  source:
+    repoURL: https://helm.elastic.co
+    chart: eck-operator
+    targetRevision: 3.4.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: elastic-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

@@ -1,0 +1,18 @@
+# storage/longhorn-single-sc.yaml
+# 앱 레벨에서 자체 복제하는 워크로드(Kafka 등)용 StorageClass.
+# - numberOfReplicas: 1  → Kafka가 브로커 간 파티션 복제를 이미 하므로 Longhorn 2중 복제는 과잉.
+#                          replica=1로 공간 절반 + 노드 부족 시 faulted 방지.
+# - reclaimPolicy: Delete → 재설치 churn 시 고아 볼륨이 안 쌓이게 (longhorn-prod의 Retain과 분리).
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-single
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "30"
+  fsType: ext4
+  dataLocality: best-effort

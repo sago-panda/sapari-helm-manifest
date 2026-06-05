@@ -1,0 +1,27 @@
+# apps/observability/kube-prometheus-stack.yaml — [Helm형 leaf] 차트=helm repo, values=git(멀티소스)
+# Prometheus + Grafana + Alertmanager (LGTM 데이터소스 배선)
+# values 한 줄만 고쳐 push 해도 ref:values 소스가 새 커밋으로 추적 → 자동 재렌더·sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: cicd
+  labels: { category: observability }
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 86.0.1
+      helm:
+        valueFiles:
+          - $values/components/observability/kube-prometheus-stack/values.yaml
+    - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

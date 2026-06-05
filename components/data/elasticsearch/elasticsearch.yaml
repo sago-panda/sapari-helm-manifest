@@ -1,0 +1,43 @@
+# storage/elasticsearch.yaml
+# ECK(Elastic Cloud on Kubernetes) 오퍼레이터로 관리하는 Elasticsearch.
+# 보안 기본 ON: 자동 TLS + elastic 유저 비번 생성(secret: elasticsearch-es-elastic-user).
+# ※ version 은 설치한 ECK 오퍼레이터가 지원하는 값이어야 함 (보통 최신 8.x). 안 맞으면 CR이 거부됨.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+  namespace: storage
+spec:
+  version: 8.17.0 # ECK 지원 버전인지 확인 후 조정
+  # Kibana 로그인용 전용 read 유저(kibana-viewer)를 ESO+Vault로 주입 (storage/kibana-user-externalsecret.yaml)
+  auth:
+    fileRealm:
+      - secretName: es-kibana-users
+  nodeSets:
+    - name: default
+      count: 1 # 단일 노드 (로깅 + 쇼핑몰 상품 검색, 포트폴리오 규모)
+      # mmap 사용(검색 성능 ↑) → 노드에 vm.max_map_count=262144 설정 필요 (STEP 0).
+      # 설정 안 하면 부트스트랩 체크 실패로 ES가 안 뜸.
+      podTemplate:
+        spec:
+          nodeSelector:
+            role: stateful # kube-worker (다른 stateful 워크로드와 동일 노드군)
+          containers:
+            - name: elasticsearch
+              resources:
+                requests: { cpu: 1, memory: 4Gi }
+                limits: { cpu: 2, memory: 4Gi }
+              env:
+                - name: ES_JAVA_OPTS
+                  value: "-Xms2g -Xmx2g" # heap = 메모리의 50% (상품 facet/집계 여유)
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources:
+              requests:
+                storage: 10Gi
+            # ES 단일 노드는 앱레벨 복제 없음 → longhorn-prod(replica 2)로 내구성 확보.
+            # (kafka처럼 longhorn-single 쓰면 노드 장애 시 데이터 손실)
+            storageClassName: longhorn-prod

@@ -1,0 +1,27 @@
+# apps/operators/vault.yaml — [Helm형 leaf] 차트=helm repo, values=git(멀티소스)
+# HashiCorp Vault (standalone, file storage). Injector 는 vault-injection=enabled ns 만 opt-in. ⚠️ unseal 은 수동
+# values 한 줄만 고쳐 push 해도 ref:values 소스가 새 커밋으로 추적 → 자동 재렌더·sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.releases.hashicorp.com
+      chart: vault
+      targetRevision: 0.32.0
+      helm:
+        valueFiles:
+          - $values/components/operators/vault/values.yaml
+    - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: security
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

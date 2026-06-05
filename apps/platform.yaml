@@ -1,0 +1,26 @@
+# apps/platform.yaml — 카테고리 "부모" App (ArgoCD 콘솔의 그룹 노드)
+# 네임스페이스 / RBAC / NetworkPolicy / StorageClass — 클러스터 토대
+# root-app 이 이 파일을 읽고, 이 App 이 apps/platform/ 의 leaf App 들을 배포한다.
+# sync-wave: 카테고리(부모) 단위로만 순서를 강제 — leaf 에는 매직넘버를 넣지 않는다.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: cicd
+  labels:
+    category: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: apps/platform # 이 폴더의 leaf App 들
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cicd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

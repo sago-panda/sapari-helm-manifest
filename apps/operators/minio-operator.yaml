@@ -1,0 +1,20 @@
+# apps/operators/minio-operator.yaml — [Helm형 leaf] 차트=helm repo (기본값 설치)
+# MinIO 오퍼레이터 (Tenant CRD 공급)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio-operator
+  namespace: cicd
+  labels: { category: operators }
+spec:
+  project: default
+  source:
+    repoURL: https://operator.min.io
+    chart: operator
+    targetRevision: 7.1.1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

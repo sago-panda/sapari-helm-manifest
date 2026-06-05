@@ -1,0 +1,22 @@
+# storage/mongodb-values.yaml
+architecture: replicaset
+replicaCount: 3
+
+arbiter:
+  enabled: false
+
+auth:
+  enabled: true
+  existingSecret: mongodb-root # ESO + Vault 가 만든 secret 참조
+
+persistence:
+  storageClass: longhorn-prod
+  size: 5Gi
+
+resources:
+  requests: {cpu: 250m, memory: 512Mi}
+  limits: {cpu: 2, memory: 2Gi}
+
+# 2 노드 클러스터에 3 replica → preferred(soft)로 가능한 한 분산
+# required는 노드 부족으로 Pending. nodeSelector도 쓰지 않음 (한 노드 쏠림 방지)
+podAntiAffinityPreset: soft

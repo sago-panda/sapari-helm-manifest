@@ -1,0 +1,38 @@
+# storage/redis-values.yaml
+# 여러 서비스 공유 캐시(look-aside). 공유 인프라라 가용성 위해 Sentinel 자동 failover 사용.
+# NOTE: Streams 를 실제로 도입하면 → commonConfiguration 에서 `appendonly yes` 켜고
+#       maxmemory-policy 를 volatile-lru 로 바꾼 뒤 캐시 키에 TTL 부여(또는 인스턴스/DB 분리).
+architecture: replication
+
+sentinel:
+    enabled: true # master 장애 시 replica 자동 승격 (자동 failover의 핵심)
+    # sentinel 은 감시·투표만 하는 경량 프로세스라 자원 소량으로 충분.
+    # (명시 안 하면 resourcesPreset 경고 — 프로덕션 비권장)
+    resources:
+        requests: { cpu: 50m, memory: 64Mi }
+        limits: { cpu: 100m, memory: 128Mi }
+
+auth:
+    enabled: true
+    existingSecret: redis-password
+    existingSecretPasswordKey: redis-password
+
+# Sentinel 모드에선 단일 StatefulSet(redis-node-0/1/2)로 뜨고 그 중 하나가 master.
+# 노드 수 = sentinel 수 → 홀수 3으로 quorum(과반) 확보, 1대 장애 견딤.
+replica:
+    replicaCount: 3
+    podAntiAffinityPreset: soft # 2노드라 required는 Pending → soft로 가능한 한 분산
+    persistence:
+        storageClass: longhorn-prod
+        size: 2Gi # Streams 데이터 감안해 상향
+    resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { cpu: 500m, memory: 768Mi }
+
+# master/replica 양쪽에 공통 적용되는 redis 설정
+commonConfiguration: |-
+    # 순수 캐시 단계: 영속화는 Bitnami 기본 RDB 스냅샷으로 충분 (AOF 불필요).
+    # allkeys-lru = 메모리 차면 아무 키나 LRU evict → TTL 안 붙여도 알아서 정리.
+    # (Streams 도입 시 volatile-lru + appendonly yes 로 전환할 것)
+    maxmemory 500mb
+    maxmemory-policy allkeys-lru

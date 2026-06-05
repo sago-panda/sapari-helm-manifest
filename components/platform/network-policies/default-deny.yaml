@@ -1,0 +1,48 @@
+# components/platform/network-policies/default-deny.yaml
+# 기본 Deny-All — 인프라 ns 마다 명시적으로 적용.
+# (원본은 `for ns in ...; kubectl apply -n $ns` 루프였음 → GitOps 에선 ns 를 명시한
+#  매니페스트로 펼친다. 각 ns 의 *-netpol 이 필요한 통신만 다시 허용.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: storage
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: security
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: cicd
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: external-secrets
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

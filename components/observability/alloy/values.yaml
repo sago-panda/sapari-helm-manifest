@@ -1,0 +1,56 @@
+# monitoring/alloy-values.yaml  (chart: grafana/alloy)
+# Promtail은 EOL → 후속인 Grafana Alloy로 파드 로그 수집 → Loki push.
+# DaemonSet으로 전 노드에서 수집. (Fluentd 대체)
+alloy:
+  configMap:
+    content: |-
+      // 클러스터의 모든 파드 발견
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      // 메타데이터를 Loki 라벨로 매핑 (각 속성은 줄바꿈으로 구분 — 한 줄에 두 개 X)
+      discovery.relabel "pods" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      // 파드 로그를 k8s API로 tail (hostPath 불필요)
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pods.output
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // Loki로 전송
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: 200m, memory: 256Mi }
+
+controller:
+  type: daemonset
+  # control-plane 노드 로그도 수집하려면 toleration
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule

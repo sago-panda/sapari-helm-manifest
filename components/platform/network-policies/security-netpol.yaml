@@ -1,0 +1,50 @@
+# netpol/security-netpol.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: security-netpol
+  namespace: security
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress
+    - from:
+        - namespaceSelector: {} # 모든 ns에서 Vault 접근 허용 (앱 시크릿 읽기)
+      ports:
+        - port: 8200
+    # apiserver(노드 host-network) → vault-agent-injector webhook (:8080)
+    # 없으면 webhook 호출이 막혀(드롭) 주입 대상 ns의 파드 생성이 지연/실패함
+    - from:
+        - ipBlock:
+            cidr: 192.168.123.0/24 # 노드 CIDR (apiserver가 여기서 호출)
+      ports:
+        - port: 8080
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # kube-apiserver — Vault k8s auth (TokenReview), ESO 등도 사용
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.0/12
+      ports:
+        - port: 443
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 192.168.123.0/24
+      ports:
+        - port: 6443
+          protocol: TCP

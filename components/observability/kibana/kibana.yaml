@@ -1,0 +1,27 @@
+# monitoring/kibana.yaml
+# ECK Kibana — elasticsearchRef로 ES와 TLS+인증 자동 배선 (수동 호스트/비번 불필요).
+# ECK가 kibana_system 유저를 ES에 생성하고 CA를 주입함.
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: kibana
+  namespace: monitoring
+spec:
+  version: 8.17.0 # ★ elasticsearch.yaml 의 version과 동일하게 맞출 것
+  count: 1
+  elasticsearchRef:
+    name: elasticsearch
+    namespace: storage # cross-namespace 연결 (ECK가 자동 처리)
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true # TLS는 Gateway/Cloudflare에서 종단 → 내부는 http (게이트웨이 연동 단순화)
+  podTemplate:
+    spec:
+      nodeSelector:
+        role: application # kube-master (app-tier — stateful 노드 부하 분산)
+      containers:
+        - name: kibana
+          resources:
+            requests: { cpu: 200m, memory: 512Mi }
+            limits: { cpu: 1, memory: 1Gi }

@@ -1,0 +1,52 @@
+# components/platform/namespaces/namespaces.yaml
+# 인프라 네임스페이스 선언.
+# k8s 1.21+ 는 모든 ns 에 kubernetes.io/metadata.name=<ns> 라벨을 자동 부여하므로
+# NetworkPolicy 의 namespaceSelector 가 별도 라벨링 없이 동작한다.
+# (envoy-gateway-system / metallb-system / kube-system 은 외부에서 관리 → 여기서 제외)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storage
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security
+  labels:
+    # Vault Agent Injector opt-in 범위. 주입을 쓰는 ns 에 동일 라벨을 붙인다.
+    vault-injection: enabled
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cicd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpg-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: elastic-system

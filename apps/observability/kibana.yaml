@@ -1,0 +1,22 @@
+# apps/observability/kibana.yaml — [매니페스트형 leaf] git 디렉토리 적용
+# ECK Kibana (elasticsearchRef→storage/elasticsearch)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kibana
+  namespace: cicd
+  labels: { category: observability }
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: components/observability/kibana
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring # 매니페스트에 ns 가 있으면 그쪽으로
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]
