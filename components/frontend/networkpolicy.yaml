@@ -1,0 +1,26 @@
+# components/frontend/networkpolicy.yaml (frontend-deploy-guide §11)
+# 프론트 파드는 Gateway 인바운드만 받고, 아웃바운드는 0(정적 서버라 외부 호출 없음).
+# podSelector 로 frontend 파드만 대상 → frontend ns 전체 default-deny 가 없어도 프론트는 잠김.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend
+  namespace: frontend
+spec:
+  podSelector:
+    matchLabels: { app: frontend }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Gateway 경유 외부 진입
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - { protocol: TCP, port: 8080 }
+    # kubelet readiness/liveness probe (노드 host-network → 파드). 없으면 probe 드롭 → 재시작 루프.
+    - from:
+        - ipBlock: { cidr: 192.168.123.0/24 } # 노드 CIDR
+      ports:
+        - { protocol: TCP, port: 8080 }
+  egress: [] # 아웃바운드 전면 차단(정적 서버는 먼저 연결하지 않음)

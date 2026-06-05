@@ -1,0 +1,25 @@
+# apps/frontend/frontend.yaml — [매니페스트형 leaf] git 디렉토리 적용
+# components/frontend/ 의 Deployment·Service·HTTPRoute·NetworkPolicy 를 frontend ns 에 배포.
+# ★ name 은 부모 App(frontend)과 겹치면 안 됨 → frontend-web.
+# ★ 이미지 태그는 sapari-fe CI(bump)가 components/frontend/deployment.yaml 의
+#   web 컨테이너 image 를 @sha256:<digest> 로 갱신 → ArgoCD 가 배포.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-web
+  namespace: cicd
+  labels: { category: frontend }
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: components/frontend
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend # 매니페스트에 ns(frontend) 명시됨
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

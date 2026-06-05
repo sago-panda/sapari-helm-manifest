@@ -28,4 +28,4 @@ spec:
             matchExpressions:
               - key: kubernetes.io/metadata.name
                 operator: In
-                values: [storage, monitoring, security, cicd, ingress]
+                values: [storage, monitoring, security, cicd, ingress, frontend]

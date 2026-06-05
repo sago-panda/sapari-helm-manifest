@@ -1,0 +1,47 @@
+# components/frontend/deployment.yaml — 정적 SPA(sapari-fe) 배포 (frontend-deploy-guide §10 하드닝)
+# ★ 컨테이너 이름 = web (sapari-fe CI 의 bump 가 이 컨테이너 image 를 digest 로 갱신).
+# ★ image 는 최초 placeholder(:main). CI 가 돌면 @sha256:<digest> 로 교체됨.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: frontend
+  labels: { app: frontend }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: frontend }
+  template:
+    metadata:
+      labels: { app: frontend }
+    spec:
+      automountServiceAccountToken: false # 프론트는 k8s API 호출 안 함 → 토큰 제거
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: web
+          image: registry.gitlab.com/sagopanda/sapari-fe:main # ← CI(bump)가 @sha256:digest 로 갱신
+          ports:
+            - { name: http, containerPort: 8080 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true # SWS 는 디스크에 안 씀 → emptyDir 불필요
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: "10m", memory: "16Mi" }
+            limits: { cpu: "200m", memory: "64Mi" }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 2
+          livenessProbe:
+            httpGet: { path: /, port: 8080 }
+            periodSeconds: 20
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: frontend }

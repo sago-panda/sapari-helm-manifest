@@ -1,0 +1,11 @@
+# components/frontend/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: frontend
+  labels: { app: frontend }
+spec:
+  selector: { app: frontend }
+  ports:
+    - { name: http, port: 80, targetPort: 8080 } # svc:80 → pod:8080 (N개로 자동 LB)

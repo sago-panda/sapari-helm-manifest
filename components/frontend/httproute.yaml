@@ -1,0 +1,22 @@
+# components/frontend/httproute.yaml
+# sapari.ascode.click 의 catch-all(/) → frontend-svc.
+# 백엔드는 같은 호스트에 *별도 HTTPRoute*(path /api, backend ns)를 둔다 → 게이트웨이가 최장 prefix
+# 우선으로 /api/* → backend, 그 외 → frontend 로 분기(same-origin = CORS 불필요). 이 파일은 안 바꿔도 됨.
+# 전제: gateway 의 allowedRoutes selector 에 frontend ns 가 포함돼야 함(components/networking/gateway).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend
+  namespace: frontend
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: default
+  hostnames:
+    - sapari.ascode.click
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: frontend-svc
+          port: 80
