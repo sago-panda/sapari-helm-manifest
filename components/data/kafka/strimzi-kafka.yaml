@@ -51,6 +51,11 @@ spec:
       transaction.state.log.min.isr: 2
       default.replication.factor: 3
       min.insync.replicas: 2
+    # KafkaUser 의 simple ACL(authorization)을 적용하려면 클러스터에도 authorizer 가 켜져 있어야 함.
+    # 없으면 UserOperator 가 "Simple authorization ACL rules are configured but not supported" 로 거부.
+    # KRaft 모드에선 StandardAuthorizer 사용. Strimzi 가 오퍼레이터/내부 유저를 자동 superUser 로 처리.
+    authorization:
+      type: simple
     # replicas / storage 는 KafkaNodePool 에서 관리 (node-pools 활성 시 여기선 무시됨)
   entityOperator:
     topicOperator: {} # KafkaTopic CRD 로 토픽을 선언적으로 관리 (GitOps)
