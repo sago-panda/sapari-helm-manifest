@@ -29,6 +29,10 @@ grafana:
         enabled: true
         storageClassName: longhorn-prod
         size: 1Gi
+    # RWO PVC + RollingUpdate → 새/옛 파드가 동시에 PVC 마운트 시도 → Multi-Attach error.
+    # Recreate: 옛 파드 종료(PVC 해제) 후 새 파드 생성 → 충돌 없음 (단일 replica라 무중단 불필요).
+    deploymentStrategy:
+        type: Recreate
     # Explore/대시보드 쿼리 시 512Mi 로는 OOMKilled(exit137) → 상향. idle 360Mi 기준 여유 확보.
     resources:
         requests: { cpu: 250m, memory: 512Mi }
