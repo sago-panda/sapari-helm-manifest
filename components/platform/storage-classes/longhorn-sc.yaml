@@ -1,13 +1,14 @@
-# storage/longhorn-sc.yaml
-# 홈랩/dev: Delete (PVC 삭제 시 PV·볼륨 자동 정리, 잔재 quota 누적 방지)
-# 운영 데이터 필요 시: Retain 으로 바꾸고 별도 백업 정책 운영
+# components/platform/storage-classes/longhorn-sc.yaml
+# 운영 데이터 보존용 → Retain (PVC 삭제해도 PV·볼륨 유지, 실수 삭제 방지).
+# ★ reclaimPolicy 는 불변(immutable) 필드 — 라이브 SC(=Retain)와 반드시 일치해야 함.
+#   (Delete 로 적으면 "updates to reclaimPolicy are forbidden" 로 sync 실패)
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: longhorn-prod
 provisioner: driver.longhorn.io
 allowVolumeExpansion: true
-reclaimPolicy: Delete
+reclaimPolicy: Retain
 volumeBindingMode: Immediate
 parameters:
   numberOfReplicas: "2"
