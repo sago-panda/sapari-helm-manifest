@@ -16,6 +16,8 @@ spec:
       labels: { app: frontend }
     spec:
       automountServiceAccountToken: false # 프론트는 k8s API 호출 안 함 → 토큰 제거
+      imagePullSecrets:
+        - name: gitlab-registry # private 레지스트리 pull (ESO 가 만든 dockerconfigjson)
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
