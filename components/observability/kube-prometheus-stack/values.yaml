@@ -25,9 +25,10 @@ grafana:
         enabled: true
         storageClassName: longhorn-prod
         size: 1Gi
+    # Explore/대시보드 쿼리 시 512Mi 로는 OOMKilled(exit137) → 상향. idle 360Mi 기준 여유 확보.
     resources:
-        requests: { cpu: 100m, memory: 128Mi }
-        limits:   { cpu: 500m, memory: 512Mi }
+        requests: { cpu: 250m, memory: 512Mi }
+        limits:   { cpu: 1,    memory: 1Gi }
     # LGTM 데이터소스 — Grafana 한 곳에서 메트릭(Prom)+로그(Loki)+트레이스(Tempo)
     additionalDataSources:
         - name: Loki
