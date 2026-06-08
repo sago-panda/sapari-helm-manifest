@@ -36,7 +36,8 @@ spec:
           selector:
             matchExpressions:
               # storage = minio-s3(storage.ascode.click, 이미지 업/다운 공개), 향후 backend 추가
-              - { key: kubernetes.io/metadata.name, operator: In, values: [frontend, storage] }
+              # keycloak = auth.ascode.click (OIDC IdP, Cloudflare Access 미적용 — apiserver JWTS·브라우저 둘 다 접근)
+              - { key: kubernetes.io/metadata.name, operator: In, values: [frontend, storage, keycloak] }
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway

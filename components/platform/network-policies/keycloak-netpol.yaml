@@ -1,0 +1,44 @@
+# components/platform/network-policies/keycloak-netpol.yaml
+# keycloak ns default-deny + 필요통신만. platform/network-policies leaf App(recurse)이 자동 적용.
+# (번들 PostgreSQL = 같은 ns → podSelector:{} 로 커버. 외부 CNPG 전환 시 storage ns egress 추가)
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: keycloak
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-netpol
+  namespace: keycloak
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # 게이트웨이 경유 외부 진입(로그인/토큰/JWKS)
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
+    # Prometheus 스크랩
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: monitoring }
+    # 같은 ns 내부(keycloak ↔ postgresql)
+    - from:
+        - podSelector: {}
+  egress:
+    # 같은 ns 내부(→ postgresql 5432)
+    - to:
+        - podSelector: {}
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
