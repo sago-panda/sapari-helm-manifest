@@ -1,9 +1,5 @@
-# apps/platform/keycloak.yaml — [Helm형 leaf] 차트=bitnami helm repo, values=git(멀티소스)
-# Keycloak (OIDC IdP). admin/DB 비번 = Vault→ESO(existingSecret). redis.yaml 과 동일한 멀티소스 패턴.
-# values 한 줄만 고쳐 push 해도 ref:values 소스가 새 커밋으로 추적 → ArgoCD 자동 재렌더·sync(= helm upgrade 상당).
-#
-# ★ releaseName: keycloak — 수동 `helm install keycloak` 과 릴리스명을 맞춰 ArgoCD 가 그대로 adopt(중복/롤아웃 방지).
-# ★ ns(keycloak)·ExternalSecret·HTTPRoute 같은 raw 매니페스트는 이 App 이 아니라 각 카테고리에서 적용(아래 주석 참조).
+# Keycloak (OIDC IdP) — Helm 차트 + git values 멀티소스 (redis.yaml 과 동일 패턴).
+# ns·ExternalSecret·HTTPRoute 같은 raw 매니페스트는 이 App 이 아니라 각 카테고리에서 적용.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -13,21 +9,21 @@ metadata:
 spec:
   project: platform
   sources:
+    # ① 차트는 bitnami helm repo 에서
     - repoURL: https://charts.bitnami.com/bitnami
       chart: keycloak
       targetRevision: 25.2.0
       helm:
-        releaseName: keycloak
+        releaseName: keycloak # 수동 helm install 과 릴리스명 일치 → ArgoCD 가 그대로 adopt(중복 방지)
         valueFiles:
-          - $values/components/platform/keycloak/values.yaml
+          - $values/components/platform/keycloak/values.yaml # ②의 git 소스에서 values 참조
+    # ② values 는 이 git repo 에서 (ref: values 로 ①의 $values 가 가리킴)
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
       targetRevision: main
       ref: values
   destination:
     server: https://kubernetes.default.svc
-    namespace: keycloak           # ns 는 platform(namespaces)에서 PSA 라벨과 함께 미리 생성
+    namespace: keycloak # ns 는 platform/namespaces 에서 PSA 라벨과 함께 미리 생성
   syncPolicy:
     automated: { prune: true, selfHeal: true }
     syncOptions: [ ServerSideApply=true ]
-# 순서: platform 카테고리는 secrets 보다 먼저 sync 되지만, ESO 시크릿이 아직 없어도 selfHeal 이 재시도해 수렴한다(§10).
-#       엄격한 선후를 원하면 이 파일을 secrets 이후 카테고리(예: apps/data/)로 옮기면 됨.

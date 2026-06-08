@@ -1,6 +1,7 @@
 # bootstrap/root-app.yaml
-# App of Apps 루트 (2-tier) — apps/*.yaml 의 "카테고리 부모 App"만 배포.
-# 각 카테고리 부모가 apps/<category>/ 의 leaf App들을 배포 → 콘솔에서 카테고리별 그룹.
+# App of Apps 루트 (1-tier 평탄화) — apps/<category>/*.yaml 의 leaf App 을 '직접' 배포.
+# 카테고리 부모 App(apps/*.yaml)을 없앴고, 콘솔 그룹화는 AppProject(PROJECTS 필터)가 담당.
+# 배포 순서는 ArgoCD 수렴(selfHeal 재시도)에 의존(레포 철학) — 필요 시 leaf 에 sync-wave 추가.
 # 최초 1회만 kubectl apply, 이후엔 git push로 자동 반영.
 #   kubectl apply -f bootstrap/root-app.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -15,7 +16,7 @@ spec:
     targetRevision: main
     path: apps
     directory:
-      recurse: false # 최상위 apps/*.yaml(카테고리 부모)만. 하위는 각 부모가 처리
+      recurse: true # apps/<category>/*.yaml leaf 를 직접 배포(평탄화). 그룹은 AppProject.
   destination:
     server: https://kubernetes.default.svc
     namespace: cicd

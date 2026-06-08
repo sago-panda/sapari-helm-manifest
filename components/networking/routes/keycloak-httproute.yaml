@@ -1,7 +1,6 @@
-# components/networking/routes/keycloak-httproute.yaml
-# auth.ascode.click → keycloak svc. networking/httproutes leaf App(recurse)이 자동 적용.
-# ★ public-gateway 사용(Cloudflare Access 미적용) — IdP 엔드포인트는 apiserver(JWKS)+브라우저 둘 다 닿아야 함.
-# 전제(자동 아님): gateway.yaml public listener selector 에 keycloak 추가됨 + Cloudflare Tunnel: auth.ascode.click → .201(Access 없음)
+# auth.ascode.click → keycloak.
+# ★ public-gateway 사용(Cloudflare Access 미적용): IdP 엔드포인트(JWKS)는 apiserver·브라우저 둘 다 닿아야 함.
+# 전제: gateway.yaml public selector 에 keycloak 포함 + Cloudflare Tunnel auth.ascode.click → .201
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

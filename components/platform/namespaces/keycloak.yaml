@@ -1,6 +1,4 @@
-# components/platform/namespaces/keycloak.yaml
-# keycloak ns — platform/namespaces leaf App(recurse)이 자동 적용.
-# PSA: 처음엔 baseline enforce + restricted warn(검증 후 restricted 승격).
+# PSA: baseline enforce + restricted warn (검증 후 restricted 로 승격)
 apiVersion: v1
 kind: Namespace
 metadata:

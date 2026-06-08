@@ -1,23 +1,16 @@
-# components/platform/argocd-projects/projects.yaml
-# App-of-Apps 카테고리에 1:1 대응하는 ArgoCD AppProject 7개.
-# → UI 좌측 PROJECTS 필터로 39개 앱을 카테고리별로 구분/그룹.
-#
-# 지금은 permissive(조직화 목적 — 아무것도 안 깨짐). destinations/sourceRepos 를 좁히면
-# "이 프로젝트 앱은 이 ns/repo 에만" 가드레일까지 됨(sapari 리뷰 §1, 보안 업그레이드).
-#
-# ※ AppProject 는 ArgoCD 가 설치된 ns(cicd)에 있어야 함.
-# ※ 이 매니페스트는 apps/platform/argocd-projects.yaml(project: default)이 먼저 생성한다
-#    (프로젝트가 있어야 다른 앱이 그걸 참조 가능 — 닭-달걀 회피).
+# App-of-Apps 카테고리별 ArgoCD AppProject — UI PROJECTS 필터로 앱을 구분.
+# 지금은 permissive(조직화 목적). destinations 를 좁히면 "이 프로젝트 앱은 이 ns 에만 배포" 가드레일이 됨.
+# apps/platform/argocd-projects.yaml(project:default)이 이 매니페스트를 먼저 생성한다.
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
-metadata: { name: platform, namespace: cicd }
+metadata: { name: platform, namespace: cicd } # AppProject 는 ArgoCD 가 설치된 ns(cicd)에
 spec:
   description: "플랫폼 — ns·rbac·netpol·StorageClass·ClusterSecretStore·keycloak·projects"
-  sourceRepos: ["*"]
-  destinations: [{ server: "*", namespace: "*" }]
-  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
-  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+  sourceRepos: ["*"] # 이 프로젝트 앱이 배포 소스로 쓸 수 있는 git/helm repo (좁히면 가드레일)
+  destinations: [{ server: "*", namespace: "*" }] # 배포 허용 대상 클러스터/네임스페이스
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }] # 생성 허용 cluster-scoped 리소스 종류
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }] # 생성 허용 namespaced 리소스 종류
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject

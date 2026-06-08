@@ -1,76 +1,54 @@
-# components/platform/keycloak/values.yaml
-# Keycloak (OIDC IdP) — apiserver OIDC 연동용. 홈랩 맞춤 values.
-#
-#   helm install keycloak bitnami/keycloak --version 25.2.0 \
-#     -n keycloak --create-namespace -f values.yaml
-#
-# 전제(설치 전):
-#   1) 같은 폴더 externalsecret.yaml 로 ESO가 keycloak-admin / keycloak-postgresql 시크릿을 먼저 생성
-#      (또는 임시로 kubectl create secret — README/응답 참조)
-#   2) httproute.yaml + public-gateway selector 에 keycloak ns 추가, Cloudflare Tunnel: auth.ascode.click → .201 (Access 미적용)
-# ※ Bitnami 값 키는 버전에 민감 — 의심되면 `helm show values bitnami/keycloak --version 25.2.0` 로 대조.
+# Keycloak (OIDC IdP) — apiserver OIDC 연동용. helm chart: bitnami/keycloak 25.2.0
 
-## ───────────────────────────────────────────────────────────────
-## 이미지 — Bitnami 무료 카탈로그 변경 대응 (homelab-troubleshooting §11③)
-##   2025-08 이후 docker.io/bitnami/<img>:<버전태그> 가 제거되어 docker.io/bitnamilegacy/ 로 이동됨.
-##   25.2.0 는 고정 버전 차트라 legacy 가 안전한 기본값. 만약 bitnami/keycloak:<tag> 가 잘 pull 되면
-##   repository 를 bitnami/keycloak 로 되돌려도 됨.
-## ───────────────────────────────────────────────────────────────
 global:
   security:
-    allowInsecureImages: true        # bitnamilegacy 등 비-bitnami repo 사용 허용(차트 가드 우회)
+    allowInsecureImages: true # 차트의 "bitnami 공식 이미지만 허용" 가드 해제 (아래 bitnamilegacy 쓰려면 필요)
 image:
   registry: docker.io
-  repository: bitnamilegacy/keycloak  # ← pull 실패 시가 아니라 '미리' legacy 로. 정상화되면 bitnami/keycloak
+  # 2025-08 Bitnami 카탈로그 변경으로 버전태그가 bitnamilegacy 로 이동(§11③). pull 되면 bitnami/keycloak 로 환원
+  repository: bitnamilegacy/keycloak
   pullPolicy: IfNotPresent
 
-## ── 규모 (요청대로 단일 replica) ──────────────────────────────
 replicaCount: 1
-# cache 는 차트 기본값 유지(replica 1 이어도 정상). cache.enabled:false 로 두면 cache-stack 설정이 충돌해
-# keycloak.conf 가 깨지며 "Incomplete line" 으로 production 부팅 실패함 → 건드리지 않는다.
+# cache 는 기본값 유지. enabled:false 로 두면 cache-stack 충돌로 keycloak.conf 가 깨져 부팅 실패함
 
-## ── 프로덕션 모드 + 리버스 프록시(Envoy Gateway ← Cloudflare Tunnel) ──
-## TLS 는 Cloudflare/Gateway 에서 종단 → Keycloak 은 내부 HTTP. 프록시 헤더로 원본 스킴/호스트 신뢰.
-production: true
-proxyHeaders: xforwarded            # KC_PROXY_HEADERS=xforwarded (X-Forwarded-* 신뢰)
+production: true # 운영 모드 — 개발용 기본설정·임시 self-signed 비활성. 실DB + hostname 필수
+proxyHeaders: xforwarded # 앞단 프록시의 X-Forwarded-* 를 신뢰 → 원본 https/호스트 인식
 tls:
-  enabled: false                    # 업스트림(CF/Gateway) TLS 종단
+  enabled: false # Keycloak 자체 TLS 끔 (TLS 는 Cloudflare/Gateway 에서 종단)
 extraEnvVars:
-  - name: KC_HOSTNAME              # OIDC issuer 와 정확히 일치해야 함(토큰 iss). oidc-keycloak-auth.html §7
+  - name: KC_HOSTNAME # Keycloak 외부 URL = OIDC issuer(토큰 iss). apiserver 설정과 정확히 일치해야 함
     value: "https://auth.ascode.click"
-  - name: KC_HTTP_ENABLED
+  - name: KC_HTTP_ENABLED # tls 끈 상태에서 HTTP 리스너 허용
     value: "true"
-  # - name: KC_HOSTNAME_STRICT     # production 기본 true. 문제 시 디버깅용으로만 false
-  #   value: "true"
 
-## ── 관리자 자격: Vault-first (git 평문 0). ESO가 만든 secret 참조 ──
+# 관리자 자격: Vault → ESO 가 만든 Secret 에서 읽음 (git 평문 0)
 auth:
   adminUser: admin
-  existingSecret: keycloak-admin    # externalsecret.yaml 가 생성
-  passwordSecretKey: admin-password
+  existingSecret: keycloak-admin # 이 이름의 Secret 의
+  passwordSecretKey: admin-password # 이 키에 admin 비번
 
-## ── 노출: Envoy Gateway HTTPRoute 사용 → 차트 ingress 끔, ClusterIP ──
 service:
-  type: ClusterIP
+  type: ClusterIP # 외부 노출은 Envoy Gateway HTTPRoute 가 담당
   ports:
-    http: 80
+    http: 80 # svc:80 → 컨테이너 8080
 ingress:
-  enabled: false
+  enabled: false # 차트 ingress 대신 Gateway API HTTPRoute 사용
 
-## ── DB: 번들 PostgreSQL (longhorn-prod, 비번은 ESO로 고정해 upgrade 재생성 사고 방지) ──
+# DB: 번들 PostgreSQL (Keycloak 전용)
 postgresql:
   enabled: true
   image:
     registry: docker.io
-    repository: bitnamilegacy/postgresql   # 동일 카탈로그 이슈 대응
-  architecture: standalone
+    repository: bitnamilegacy/postgresql # keycloak 이미지와 동일한 카탈로그 이슈 대응
+  architecture: standalone # 단일 인스턴스(복제 없음)
   auth:
     username: keycloak
     database: keycloak
-    existingSecret: keycloak-postgresql
+    existingSecret: keycloak-postgresql # DB 비번도 Vault→ESO Secret 에서
     secretKeys:
-      adminPasswordKey: postgres-password  # postgres 슈퍼유저
-      userPasswordKey: password            # keycloak 앱 유저
+      adminPasswordKey: postgres-password # postgres 슈퍼유저 비번 키
+      userPasswordKey: password # keycloak 앱 유저 비번 키
   primary:
     persistence:
       enabled: true
@@ -79,12 +57,10 @@ postgresql:
     resources:
       requests: { cpu: 100m, memory: 256Mi }
       limits:   { cpu: "1",  memory: 512Mi }
-  # volumePermissions(루트 initContainer)는 기본 비활성 유지 — PSA restricted 호환
   volumePermissions:
-    enabled: false
+    enabled: false # 루트 권한 initContainer 끔 (PSA restricted 호환)
 
-## ── (대안) 외부 DB = 기존 CNPG 재사용 ──
-## 위 postgresql.enabled: false 로 바꾼 뒤 아래 사용. CNPG에 keycloak DB/유저 + ESO secret(keycloak-db) 필요.
+# 대안: 기존 CNPG 재사용 시 postgresql.enabled:false + 아래 사용
 # externalDatabase:
 #   host: postgres-cluster-rw.storage.svc.cluster.local
 #   port: 5432
@@ -93,55 +69,45 @@ postgresql:
 #   existingSecret: keycloak-db
 #   existingSecretPasswordKey: password
 
-## ── 리소스 (Keycloak JVM) ─────────────────────────────────────
 resources:
   requests: { cpu: 250m, memory: 768Mi }
   limits:   { cpu: "1",  memory: 1Gi }
 
-## ── 보안 컨텍스트 (keycloak ns PSA 대비; Bitnami 기본도 이미 비-root) ──
-## readOnlyRootFilesystem 은 첫 기동 안정성 위해 미설정(차트 기본). 검증 후 시도 가능.
+# non-root 강제 + 권한 최소화 (PSA restricted 충족)
 podSecurityContext:
   enabled: true
-  fsGroup: 1001
+  fsGroup: 1001 # 마운트 볼륨 그룹 소유권 → non-root 쓰기 가능
 containerSecurityContext:
   enabled: true
   runAsNonRoot: true
   runAsUser: 1001
-  allowPrivilegeEscalation: false
+  allowPrivilegeEscalation: false # setuid 등 권한 상승 차단
   capabilities:
-    drop: ["ALL"]
+    drop: ["ALL"] # 리눅스 커널 권한 전부 제거
   seccompProfile:
-    type: RuntimeDefault
+    type: RuntimeDefault # 위험 syscall 차단
 
-## ── 첫 부팅 DB 마이그레이션 여유 (느린 시작 대비) ──
+# 첫 부팅 DB 마이그레이션이 느려 startup 윈도우를 넉넉히 (period×failureThreshold = 최대 ~5분)
 startupProbe:
   enabled: true
   initialDelaySeconds: 60
   periodSeconds: 10
-  failureThreshold: 30              # 최대 ~5분 기동 허용
+  failureThreshold: 30
 livenessProbe:
   enabled: true
 readinessProbe:
   enabled: true
 
-## ── 관측: Prometheus(kube-prometheus-stack) 스크랩 ──
 metrics:
   enabled: true
   serviceMonitor:
     enabled: true
     namespace: monitoring
     labels:
-      release: kube-prometheus-stack   # ★ Prometheus serviceMonitorSelector 와 일치시킬 것(실제 helm release 명)
+      release: kube-prometheus-stack # Prometheus 가 이 라벨로 ServiceMonitor 를 선택 → 실제 release 명과 일치 필수
 
-## ── 네트워크 정책: 홈랩이 중앙 관리(components/platform/network-policies) → 차트 것 끔 ──
-## keycloak ns 에 별도 netpol 필요: ingress(envoy-gateway-system) + egress(DNS 53, apiserver, 같은 ns DB 5432)
 networkPolicy:
-  enabled: false
+  enabled: false # 차트 netpol 끄고 components/platform/network-policies 에서 중앙 관리
 
-## ── 스케줄: app-tier 노드 선호(선택) ──
-# nodeSelector:
-#   role: application
-
-## ── 실험적 설치 시 끄는 게 편한 것들 ──
 keycloakConfigCli:
-  enabled: false                    # 나중에 realm/client 를 코드로 import 할 때 켜기(oidc 문서 §3)
+  enabled: false # realm/client 를 코드로 import 할 때 켜기
