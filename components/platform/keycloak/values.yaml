@@ -26,8 +26,8 @@ image:
 
 ## ── 규모 (요청대로 단일 replica) ──────────────────────────────
 replicaCount: 1
-cache:
-  enabled: false                     # replica=1 → Infinispan 분산캐시 불필요(로컬 캐시). 다중화 시 true
+# cache 는 차트 기본값 유지(replica 1 이어도 정상). cache.enabled:false 로 두면 cache-stack 설정이 충돌해
+# keycloak.conf 가 깨지며 "Incomplete line" 으로 production 부팅 실패함 → 건드리지 않는다.
 
 ## ── 프로덕션 모드 + 리버스 프록시(Envoy Gateway ← Cloudflare Tunnel) ──
 ## TLS 는 Cloudflare/Gateway 에서 종단 → Keycloak 은 내부 HTTP. 프록시 헤더로 원본 스킴/호스트 신뢰.
@@ -35,7 +35,6 @@ production: true
 proxyHeaders: xforwarded            # KC_PROXY_HEADERS=xforwarded (X-Forwarded-* 신뢰)
 tls:
   enabled: false                    # 업스트림(CF/Gateway) TLS 종단
-httpRelativePath: "/"
 extraEnvVars:
   - name: KC_HOSTNAME              # OIDC issuer 와 정확히 일치해야 함(토큰 iss). oidc-keycloak-auth.html §7
     value: "https://auth.ascode.click"
