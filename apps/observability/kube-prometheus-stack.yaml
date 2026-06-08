@@ -8,7 +8,7 @@ metadata:
   namespace: cicd
   labels: { category: observability }
 spec:
-  project: default
+  project: observability
   sources:
     - repoURL: https://prometheus-community.github.io/helm-charts
       chart: kube-prometheus-stack

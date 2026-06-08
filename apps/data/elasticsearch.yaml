@@ -7,7 +7,7 @@ metadata:
   namespace: cicd
   labels: { category: data }
 spec:
-  project: default
+  project: data
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
     targetRevision: main

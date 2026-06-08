@@ -7,7 +7,7 @@ metadata:
   namespace: cicd
   labels: { category: networking }
 spec:
-  project: default
+  project: networking
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
     targetRevision: main

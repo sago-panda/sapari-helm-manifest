@@ -10,7 +10,7 @@ metadata:
   namespace: cicd
   labels: { category: frontend }
 spec:
-  project: default
+  project: frontend
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
     targetRevision: main

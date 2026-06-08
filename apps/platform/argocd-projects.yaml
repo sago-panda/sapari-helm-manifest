@@ -1,0 +1,23 @@
+# apps/platform/argocd-projects.yaml — [매니페스트형 leaf] AppProject 7개 생성
+# ★ 이 앱만 project: default 로 둔다 — 프로젝트가 아직 없을 때 그것을 '만드는' 앱이므로(닭-달걀 회피).
+#   나머지 39개 앱은 각자 카테고리 project 로 옮긴다(아래 sed).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-projects
+  namespace: cicd
+  labels: { category: platform }
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: main
+    path: components/platform/argocd-projects
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cicd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

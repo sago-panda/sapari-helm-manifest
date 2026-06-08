@@ -7,7 +7,7 @@ metadata:
   namespace: cicd
   labels: { category: operators }
 spec:
-  project: default
+  project: operators
   source:
     repoURL: https://strimzi.io/charts/
     chart: strimzi-kafka-operator

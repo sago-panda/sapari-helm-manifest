@@ -11,7 +11,7 @@ metadata:
   namespace: cicd
   labels: { category: platform }
 spec:
-  project: default
+  project: platform
   sources:
     - repoURL: https://charts.bitnami.com/bitnami
       chart: keycloak

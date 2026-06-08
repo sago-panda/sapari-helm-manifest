@@ -8,7 +8,7 @@ metadata:
   namespace: cicd
   labels: { category: operators }
 spec:
-  project: default
+  project: operators
   sources:
     - repoURL: https://helm.releases.hashicorp.com
       chart: vault

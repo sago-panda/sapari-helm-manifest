@@ -12,7 +12,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  project: default
+  project: operators
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
     targetRevision: main

@@ -7,7 +7,7 @@ metadata:
   namespace: cicd
   labels: { category: observability }
 spec:
-  project: default
+  project: observability
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
     targetRevision: main

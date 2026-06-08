@@ -7,7 +7,7 @@ metadata:
   namespace: cicd
   labels: { category: operators }
 spec:
-  project: default
+  project: operators
   source:
     repoURL: https://helm.elastic.co
     chart: eck-operator

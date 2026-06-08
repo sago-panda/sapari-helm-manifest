@@ -1,0 +1,80 @@
+# components/platform/argocd-projects/projects.yaml
+# App-of-Apps 카테고리에 1:1 대응하는 ArgoCD AppProject 7개.
+# → UI 좌측 PROJECTS 필터로 39개 앱을 카테고리별로 구분/그룹.
+#
+# 지금은 permissive(조직화 목적 — 아무것도 안 깨짐). destinations/sourceRepos 를 좁히면
+# "이 프로젝트 앱은 이 ns/repo 에만" 가드레일까지 됨(sapari 리뷰 §1, 보안 업그레이드).
+#
+# ※ AppProject 는 ArgoCD 가 설치된 ns(cicd)에 있어야 함.
+# ※ 이 매니페스트는 apps/platform/argocd-projects.yaml(project: default)이 먼저 생성한다
+#    (프로젝트가 있어야 다른 앱이 그걸 참조 가능 — 닭-달걀 회피).
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: platform, namespace: cicd }
+spec:
+  description: "플랫폼 — ns·rbac·netpol·StorageClass·ClusterSecretStore·keycloak·projects"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: operators, namespace: cicd }
+spec:
+  description: "오퍼레이터 — longhorn·vault·eso·cnpg·strimzi·eck·minio-operator"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: secrets, namespace: cicd }
+spec:
+  description: "시크릿 — ExternalSecret(Vault→ESO)"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: data, namespace: cicd }
+spec:
+  description: "데이터 — postgresql·mongodb·redis·kafka·elasticsearch·minio"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: observability, namespace: cicd }
+spec:
+  description: "관측 — prometheus·loki·alloy·tempo·kibana"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: networking, namespace: cicd }
+spec:
+  description: "네트워킹 — Gateway·HTTPRoute"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: { name: frontend, namespace: cicd }
+spec:
+  description: "프론트엔드 — sapari-fe (향후 backend 추가 시 분리)"
+  sourceRepos: ["*"]
+  destinations: [{ server: "*", namespace: "*" }]
+  clusterResourceWhitelist: [{ group: "*", kind: "*" }]
+  namespaceResourceWhitelist: [{ group: "*", kind: "*" }]

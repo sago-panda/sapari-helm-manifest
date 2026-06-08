@@ -8,7 +8,7 @@ metadata:
   namespace: cicd
   labels: { category: data }
 spec:
-  project: default
+  project: data
   sources:
     - repoURL: https://charts.bitnami.com/bitnami
       chart: mongodb
