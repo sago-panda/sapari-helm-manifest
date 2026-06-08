@@ -22,7 +22,8 @@ loki:
       admin: loki-admin
     s3:
       endpoint: minio.storage.svc.cluster.local:80 # MinIO S3 (내부)
-      region: us-east-1
+      region: ap-northeast-2 # ★ MinIO 설정 region 과 일치해야 함(SigV4 서명에 region 포함).
+      #                        불일치 시 'AuthorizationHeaderMalformed: region is wrong' 로 compactor 크래시
       s3ForcePathStyle: true
       insecure: true # http (내부)
       accessKeyId: ${MINIO_ACCESS_KEY} # extraEnvFrom + expand-env 로 주입
