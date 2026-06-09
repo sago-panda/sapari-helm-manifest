@@ -42,6 +42,17 @@ spec:
       ports:
         - { protocol: UDP, port: 53 }
         - { protocol: TCP, port: 53 }
-    # 외부 SMTP(Resend) egress 는 여기(k8s NetworkPolicy)서 안 열고,
-    # keycloak-smtp-fqdn.yaml 의 Calico NetworkSet(allowedEgressDomains)로
-    # smtp.resend.com:587 만 도메인 한정 허용한다(최소권한). DNS(위)는 학습에 필요해 유지.
+    # 외부 SMTP (Resend) — 이메일 인증/비번재설정 발송.
+    # 이 Calico OSS는 FQDN/DNS policy(allowedEgressDomains) 미지원으로 확인됨 → 도메인 한정 불가.
+    # smtp.resend.com 은 AWS ELB라 IP 핀도 회전으로 깨짐 → IP 고정도 부적합.
+    # 최소권한 절충: 포트 587(STARTTLS) 하나만, 목적지는 사설망 제외 외부.
+    # 사설대역 제외로 내부 횡이동(다른 ns/노드)은 계속 차단. 진짜 도메인 한정은 Cilium 전환 후 toFQDNs.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12   # Calico 파드망(172.16.0.0/16) 포함 사설대역 제외
+              - 192.168.0.0/16
+      ports:
+        - { protocol: TCP, port: 587 }
