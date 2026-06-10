@@ -8,9 +8,26 @@
 stages:
 - test
 - secret-detection
+- promote
 variables:
   SECRET_DETECTION_ENABLED: 'true'
 secret_detection:
   stage: secret-detection
 include:
 - template: Security/Secret-Detection.gitlab-ci.yml
+# 이미지 서명 검증 (verify 컴포넌트)
+#   components/ 이하 모든 yaml 의 자사 이미지(registry.gitlab.com/sagopanda/*, initContainers 등
+#   모든 문자열 image 필드)가 "이미지를 소유한 앱 repo 의 main 공식 파이프라인" 서명인지
+#   cosign keyless 로 확인. 미서명 / 신원 불일치 / digest 미고정(태그 참조)이면 파이프라인 실패.
+#
+#   ★ 새 앱(BE 등) 추가 시 이 파일 수정 불필요 — components/<app>/ 에 매니페스트만 추가하면
+#     자동 검증 (이미지 경로 = 프로젝트 경로 컨벤션으로 서명 신원을 유도하기 때문).
+#
+#   전제 (앱 repo 마다 1회): 앱 repo → Settings → CI/CD → Job token permissions 에 이 repo 허용.
+#     이 잡이 "이 repo 의" CI_JOB_TOKEN 으로 "앱 repo 소유" registry 의 서명을 읽는 구조라서,
+#     자원 주인인 앱 repo 쪽에서 접근 허용을 선언한다 (inbound allowlist — 토큰 전달 아님).
+- component: $CI_SERVER_FQDN/sagopanda/sapari-cicd-template/verify@main
+# 승격(promote) — 이 파이프라인(verify 포함)이 전부 통과한 커밋만 release 브랜치로 ff-push.
+#   ArgoCD 는 release 를 sync 하므로 verify 실패 커밋은 배포 대상이 못 됨(차단형 통제).
+#   필요: PROMOTE_TOKEN (이 repo write_repository, Masked+Protected+env scope `release`)
+- component: $CI_SERVER_FQDN/sagopanda/sapari-cicd-template/promote@main
