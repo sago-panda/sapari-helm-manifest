@@ -18,7 +18,7 @@ spec:
         valueFiles:
           - $values/components/observability/kube-prometheus-stack/values.yaml
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-      targetRevision: main
+      targetRevision: release
       ref: values
   destination:
     server: https://kubernetes.default.svc

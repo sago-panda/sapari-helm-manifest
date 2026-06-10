@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-    targetRevision: main
+    targetRevision: release
     path: components/platform/argocd-projects
     directory:
       recurse: true

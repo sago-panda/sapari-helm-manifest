@@ -19,7 +19,7 @@ spec:
           - $values/components/platform/keycloak/values.yaml # ②의 git 소스에서 values 참조
     # ② values 는 이 git repo 에서 (ref: values 로 ①의 $values 가 가리킴)
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-      targetRevision: main
+      targetRevision: release
       ref: values
   destination:
     server: https://kubernetes.default.svc

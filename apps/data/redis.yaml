@@ -17,7 +17,7 @@ spec:
         valueFiles:
           - $values/components/data/redis/values.yaml
     - repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-      targetRevision: main
+      targetRevision: release
       ref: values
   destination:
     server: https://kubernetes.default.svc

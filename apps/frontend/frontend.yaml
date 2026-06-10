@@ -11,7 +11,7 @@ spec:
   project: frontend
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-    targetRevision: main
+    targetRevision: release
     path: components/frontend
     directory:
       recurse: true

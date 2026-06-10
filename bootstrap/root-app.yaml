@@ -13,7 +13,7 @@ spec:
   project: default
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-    targetRevision: main
+    targetRevision: release
     path: apps
     directory:
       recurse: true # apps/<category>/*.yaml leaf 를 직접 배포(평탄화). 그룹은 AppProject.

@@ -10,7 +10,7 @@ spec:
   project: networking
   source:
     repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
-    targetRevision: main
+    targetRevision: release
     path: components/networking/routes
     directory:
       recurse: true
