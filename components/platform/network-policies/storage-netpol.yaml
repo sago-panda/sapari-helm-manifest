@@ -52,17 +52,14 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
-    # kube-apiserver (Service VIP 10.96.0.1:443) — operator/controller가 API 호출에 필요
-    - to:
-        - ipBlock:
-            cidr: 10.96.0.0/12 # 기본 service CIDR
-      ports:
-        - port: 443
-          protocol: TCP
-    # 노드 IP 직접 닿을 때 (CNI에 따라 service VIP 대신 node IP로 라우팅됨)
-    - to:
-        - ipBlock:
-            cidr: 192.168.123.0/24
-      ports:
-        - port: 6443
-          protocol: TCP
+---
+# kube-apiserver egress (minio/strimzi 등 operator 의 API 호출)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cilium-netpol
+  namespace: storage
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [kube-apiserver]

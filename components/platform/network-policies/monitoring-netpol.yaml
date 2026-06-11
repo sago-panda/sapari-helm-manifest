@@ -44,16 +44,6 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
-    # Prometheus 스크레이프 — 노드의 kubelet/cadvisor(10250), node-exporter(9100).
-    # host-network라 노드 IP로 접근 → 노드 CIDR 허용 필요 (없으면 노드 타겟 DOWN)
-    # 6443: kube-apiserver (service VIP가 노드:6443으로 DNAT됨). operator/SD/certgen에 필수.
-    - to:
-        - ipBlock:
-            cidr: 192.168.123.0/24
-      ports:
-        - { port: 10250 }
-        - { port: 9100 }
-        - { port: 6443 }
     # Prometheus → Envoy Gateway proxy 메트릭 (PodMonitor, 19001 /stats/prometheus)
     - to:
         - namespaceSelector:
@@ -62,5 +52,21 @@ spec:
       ports:
         - { port: 19001 }
     - ports:
-        - port: 443 # 외부 알림 (Slack, PagerDuty 등) + kube-apiserver SD
+        - port: 443 # 외부 알림 (Slack, PagerDuty 등)
         - port: 80
+---
+# 노드 스크레이프(kubelet/cAdvisor 10250, node-exporter 9100) + kube-apiserver(SD/operator)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cilium-netpol
+  namespace: monitoring
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities: [host, remote-node]
+      toPorts:
+        - ports:
+            - { port: "10250", protocol: TCP }
+            - { port: "9100", protocol: TCP }
+    - toEntities: [kube-apiserver]

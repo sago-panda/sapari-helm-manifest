@@ -42,17 +42,30 @@ spec:
       ports:
         - { protocol: UDP, port: 53 }
         - { protocol: TCP, port: 53 }
-    # 외부 SMTP (Resend) — 이메일 인증/비번재설정 발송.
-    # 이 Calico OSS는 FQDN/DNS policy(allowedEgressDomains) 미지원으로 확인됨 → 도메인 한정 불가.
-    # smtp.resend.com 은 AWS ELB라 IP 핀도 회전으로 깨짐 → IP 고정도 부적합.
-    # 최소권한 절충: 포트 587(STARTTLS) 하나만, 목적지는 사설망 제외 외부.
-    # 사설대역 제외로 내부 횡이동(다른 ns/노드)은 계속 차단. 진짜 도메인 한정은 Cilium 전환 후 toFQDNs.
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.0.0.0/8
-              - 172.16.0.0/12   # Calico 파드망(172.16.0.0/16) 포함 사설대역 제외
-              - 192.168.0.0/16
-      ports:
-        - { protocol: TCP, port: 587 }
+---
+# 외부 SMTP(Resend) — Cilium toFQDNs 로 도메인 한정 (Calico 시절 "사설망 제외 전체 587" 절충을 대체)
+# DNS rule 은 FQDN 학습용 프록시 활성화에 필수
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cilium-netpol
+  namespace: keycloak
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - { port: "53", protocol: UDP }
+            - { port: "53", protocol: TCP }
+          rules:
+            dns:
+              - matchPattern: "*"
+    - toFQDNs:
+        - matchName: smtp.resend.com
+      toPorts:
+        - ports:
+            - { port: "587", protocol: TCP }
