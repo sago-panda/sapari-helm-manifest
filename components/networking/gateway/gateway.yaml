@@ -47,4 +47,5 @@ spec:
           from: Selector
           selector:
             matchExpressions:
-              - { key: kubernetes.io/metadata.name, operator: In, values: [cicd, monitoring, security, storage] }
+              # kube-system = hubble-ui (Cilium 네트워크 관측)
+              - { key: kubernetes.io/metadata.name, operator: In, values: [cicd, monitoring, security, storage, kube-system] }

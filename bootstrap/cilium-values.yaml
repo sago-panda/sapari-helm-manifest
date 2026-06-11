@@ -55,7 +55,7 @@ hubble:
       requests: {cpu: 10m, memory: 64Mi}
       limits: {memory: 128Mi}
   ui:
-    enabled: true         # 내부 접근은 port-forward (HTTPRoute 미노출)
+    enabled: true         # hubble.ascode.click (admin-gateway HTTPRoute)
     frontend:
       resources:
         requests: {cpu: 10m, memory: 32Mi}

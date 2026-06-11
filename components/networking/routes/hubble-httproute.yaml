@@ -1,0 +1,18 @@
+# ingress/hubble-httproute.yaml
+# Hubble UI(Cilium 네트워크 관측)를 admin-gateway 로 노출. Cloudflare Access 뒤.
+# 서비스명: hubble-ui:80 (kube-system, cilium helm 이 생성).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hubble-route
+  namespace: kube-system
+spec:
+  parentRefs:
+    - name: admin-gateway
+      namespace: ingress
+  hostnames:
+    - hubble.ascode.click
+  rules:
+    - backendRefs:
+        - name: hubble-ui
+          port: 80
