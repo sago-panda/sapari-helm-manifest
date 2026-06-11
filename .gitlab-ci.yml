@@ -5,6 +5,19 @@
 # Container Scanning customization: https://docs.gitlab.com/user/application_security/container_scanning/#customizing-analyzer-behavior
 # Note that environment variables can be set in several places
 # See https://docs.gitlab.com/ci/variables/#cicd-variable-precedence
+# 파이프라인 생성 규칙:
+#   - release 브랜치는 파이프라인 안 만듦 — promote 가 ff-push 한 커밋은 main 에서 이미 전부
+#     검증된 동일 커밋이라 재실행이 낭비이고, component 해석 실패(간헐 flake) 노출면만 늘림
+#   - MR 이 열린 브랜치는 MR 파이프라인만 (중복 방지)
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+
 stages:
 - test
 - secret-detection
