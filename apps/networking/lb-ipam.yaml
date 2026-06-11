@@ -1,0 +1,22 @@
+# apps/networking/lb-ipam.yaml — [매니페스트형 leaf] git 디렉토리 적용
+# Cilium LB-IPAM 풀 + L2 announcement (phase 3, MetalLB 대체)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lb-ipam
+  namespace: cicd
+  labels: { category: networking }
+spec:
+  project: networking
+  source:
+    repoURL: https://gitlab.com/sagopanda/sapari-helm-manifest.git
+    targetRevision: release
+    path: components/networking/lb-ipam
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default # cluster-scoped 리소스라 ns 무관
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ ServerSideApply=true ]

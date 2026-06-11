@@ -2,8 +2,9 @@
 # 공개(public) / 내부관리(admin) 2-게이트웨이 분리. 각자 독립 Envoy fleet + MetalLB IP.
 #   - public-gateway  : sapari.ascode.click (frontend + 향후 backend /api)  → 192.168.123.201
 #   - admin-gateway   : argocd/grafana/kibana/vault/minio (Cloudflare Access) → 192.168.123.202
-# IP 고정: spec.infrastructure.annotations 가 proxy LoadBalancer Service 에 전파 → MetalLB 가 그 IP 할당.
-# 전제: envoy-gateway + MetalLB(pool 192.168.123.200-210) 는 이미 설치(부트스트랩, GitOps 밖).
+# IP 고정: spec.infrastructure.annotations 가 proxy LoadBalancer Service 에 전파 → LB 컨트롤러가 그 IP 할당.
+#   (phase 3 전환기: MetalLB·Cilium 어노테이션 병행 → MetalLB 제거 후 metallb 쪽 삭제)
+# 전제: envoy-gateway + Cilium LB-IPAM(components/networking/lb-ipam, pool .200-210).
 # ※ Cloudflare Tunnel(105 호스트)에서 각 호스트를 해당 게이트웨이 IP 로 라우팅해야 함(외부 작업).
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
@@ -22,6 +23,7 @@ spec:
   infrastructure:
     annotations:
       metallb.universe.tf/loadBalancerIPs: "192.168.123.201"
+      io.cilium/lb-ipam-ips: "192.168.123.201"
     parametersRef: # public 만 HA(replicas 2) — 아래 EnvoyProxy 참조 (admin 은 기본 1)
       group: gateway.envoyproxy.io
       kind: EnvoyProxy
@@ -49,6 +51,7 @@ spec:
   infrastructure:
     annotations:
       metallb.universe.tf/loadBalancerIPs: "192.168.123.202"
+      io.cilium/lb-ipam-ips: "192.168.123.202"
   listeners:
     - name: http
       protocol: HTTP

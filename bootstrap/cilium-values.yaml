@@ -38,11 +38,11 @@ kubeProxyReplacement: true
 k8sServiceHost: 192.168.123.105
 k8sServicePort: 6443
 
-# ── [phase 3] LB-IPAM + L2 announcement (kube-proxy replacement 전제) ──
+# ── [phase 3] LB-IPAM + L2 announcement — 풀/정책은 components/networking/lb-ipam (GitOps) ──
 l2announcements:
-  enabled: false
+  enabled: true
 externalIPs:
-  enabled: false
+  enabled: true
 
 # ── [phase 4] Gateway API (Cilium ↔ Gateway API CRD 버전 매트릭스 확인 후) ──
 gatewayAPI:

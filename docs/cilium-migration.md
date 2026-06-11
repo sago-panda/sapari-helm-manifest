@@ -216,50 +216,43 @@ kubectl -n kube-system delete cm kube-proxy
 > `.201/.202` 유지가 핵심. MetalLB와 Cilium LB-IPAM이 동시에 같은 풀을 다투지 않도록,
 > **Cilium 풀을 먼저 만들고 → Gateway/Service의 IP 고정 방식을 전환 → MetalLB 제거** 순서.
 
-### 3-1. Cilium LB-IPAM 기능 활성화
+> ⚠️ 이 클러스터 특이사항 둘 (phase 2 완료 시점 실측):
+> 1. **노드 NIC 은 `wlp1s0`(WiFi)** — L2 정책 `interfaces` 는 `^wlp.*` 여야 함 (`^eth/^en` 은 매칭 0 → 전면 단절).
+> 2. **Gateway svc 는 `externalTrafficPolicy: Local`** + envoy fleet 전원 worker 거주. Cilium L2 리더 선출은
+>    (MetalLB 와 달리) 로컬 백엔드 유무를 안 보므로 master 가 리더가 되면 VIP 블랙홀 —
+>    `nodeSelector` 로 광고 노드를 worker 로 한정한다.
+
+### 3-1. Cilium LB-IPAM 기능 활성화 (cilium-values.yaml 에 반영 후)
 ```bash
-helm upgrade cilium cilium/cilium -n kube-system -f cilium-values.yaml \
-  --set l2announcements.enabled=true \
-  --set externalIPs.enabled=true
-# (kube-proxy replacement가 켜진 상태여야 L2 announcement 동작)
+# l2announcements.enabled=true, externalIPs.enabled=true 를 파일에 반영한 상태에서
+helm upgrade cilium cilium/cilium -n kube-system -f cilium-values.yaml
+kubectl -n kube-system rollout restart ds/cilium
+# (kube-proxy replacement가 켜진 상태여야 L2 announcement 동작 — phase 2 전제)
 ```
 
-### 3-2. IP 풀 + L2 정책 생성 (클러스터 오브젝트)
-```yaml
-apiVersion: cilium.io/v2alpha1
-kind: CiliumLoadBalancerIPPool
-metadata:
-  name: homelab-pool
-spec:
-  blocks:
-    - start: "192.168.123.200"
-      stop:  "192.168.123.210"
----
-apiVersion: cilium.io/v2alpha1
-kind: CiliumL2AnnouncementPolicy
-metadata:
-  name: homelab-l2
-spec:
-  loadBalancerIPs: true
-  interfaces: ["^eth.*", "^en.*"]   # 노드 NIC에 맞게 조정
-  nodeSelector:
-    matchLabels: {}                 # 전 노드
-```
+### 3-2. IP 풀 + L2 정책 (📝 GitOps — `components/networking/lb-ipam/lb-ipam.yaml`)
+Cilium 정책 CRD 는 GitOps 관리 원칙에 따라 leaf App(`apps/networking/lb-ipam.yaml`)으로 적용.
+풀은 `cilium.io/v2`, L2 정책은 `v2alpha1`(1.19 기준 v2 미지원). 내용 요지:
+- `CiliumLoadBalancerIPPool homelab-pool`: `.200~.210` (MetalLB 풀과 동일)
+- `CiliumL2AnnouncementPolicy homelab-l2`: `interfaces: ["^wlp.*"]`, `nodeSelector: kube-worker` (위 특이사항 반영)
 
-### 3-3. IP 고정 방식 전환 + MetalLB 제거
-- 현재 Envoy의 LB 서비스는 MetalLB 어노테이션으로 .201/.202를 받음.
-  Cilium에서는 LB 서비스에 `io.cilium/lb-ipam-ips: "192.168.123.201"` 같은 방식으로 고정.
-- **이 시점에는 Gateway가 아직 Envoy Gateway이므로**, Envoy의 LB 서비스가 Cilium 풀에서 .201/.202를 그대로 받도록 확인한 뒤 MetalLB를 내린다. (Gateway 자체 전환은 phase 4)
+### 3-3. IP 고정 병행 → 확인 → MetalLB 제거
+- `gateway.yaml` 의 `infrastructure.annotations` 에 `io.cilium/lb-ipam-ips` 를 **MetalLB 어노테이션과 병행 추가** (📝 repo).
+  둘 다 같은 IP 를 가리키고 광고 노드도 동일(worker)해서 전환기 충돌 없음 — 단 status 를 두 컨트롤러가
+  다투므로 겹침 시간은 짧게, 한 자리에서 끝낸다.
+- sync 후 `.201/.202` 가 Cilium 풀에서도 동일 할당되는지 확인하고 MetalLB 제거:
 ```bash
-# MetalLB 제거
+kubectl get ciliumloadbalancerippool homelab-pool   # IPs Available/Used 확인
 helm uninstall metallb -n metallb-system    # (설치 방식에 맞게)
 kubectl delete ipaddresspool homelab-pool -n metallb-system
 kubectl delete l2advertisement homelab-l2 -n metallb-system
 ```
+- 외부 접속 정상 확인 후 `metallb.universe.tf/loadBalancerIPs` 어노테이션 제거 (📝 repo 후속 정리).
 
 ### 📝 repo 변경 (이 시점에 push)
-`l2announcements`·`externalIPs` 값은 cilium-values.yaml(부트스트랩 영역). repo 매니페스트 자체 변경은 phase 4의 Gateway에서 IP 고정 어노테이션과 함께 처리하므로, phase 3 단독 repo 변경은 없음.
-**단, `components/networking/gateway/gateway.yaml`의 `metallb.universe.tf/loadBalancerIPs` 어노테이션은 phase 4에서 Cilium 방식으로 교체**(아래).
+- `bootstrap/cilium-values.yaml`: `l2announcements`·`externalIPs` enable
+- `components/networking/lb-ipam/` + `apps/networking/lb-ipam.yaml` 신규
+- `components/networking/gateway/gateway.yaml`: `io.cilium/lb-ipam-ips` 병행 추가 (MetalLB 제거 후 metallb 어노테이션 삭제)
 
 ### Phase 3 검증
 - `.201/.202`가 Cilium 풀에서 동일하게 할당, 외부 접속 정상
