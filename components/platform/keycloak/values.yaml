@@ -5,7 +5,7 @@ global:
     allowInsecureImages: true # 차트의 "bitnami 공식 이미지만 허용" 가드 해제 (아래 bitnamilegacy 쓰려면 필요)
 image:
   registry: docker.io
-  # 2025-08 Bitnami 카탈로그 변경으로 버전태그가 bitnamilegacy 로 이동(§11③). pull 되면 bitnami/keycloak 로 환원
+  # 2025-08 Bitnami 카탈로그 변경으로 버전태그가 bitnamilegacy 로 이동. pull 되면 bitnami/keycloak 로 환원
   repository: bitnamilegacy/keycloak
   pullPolicy: IfNotPresent
 

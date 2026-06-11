@@ -20,10 +20,6 @@ spec:
   podSelector: {}
   policyTypes: [Ingress, Egress]
   ingress:
-    # 게이트웨이 경유 외부 진입(로그인/토큰/JWKS)
-    - from:
-        - namespaceSelector:
-            matchLabels: { kubernetes.io/metadata.name: envoy-gateway-system }
     # Prometheus 스크랩
     - from:
         - namespaceSelector:
@@ -53,7 +49,7 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # Cilium Gateway 진입(예약신원 ingress) — phase 4 에서 envoy-gateway-system ns 규칙 대체
+    # Gateway 진입 — Cilium Gateway 트래픽은 예약신원 ingress (ns 셀렉터 미매칭)
     - fromEntities: [ingress]
   egress:
     - toEndpoints:

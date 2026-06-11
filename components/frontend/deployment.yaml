@@ -1,4 +1,4 @@
-# components/frontend/deployment.yaml — 정적 SPA(sapari-fe) 배포 (frontend-deploy-guide §10 하드닝)
+# components/frontend/deployment.yaml — 정적 SPA(sapari-fe) 배포
 # ★ 컨테이너 이름 = web (sapari-fe CI 의 bump 가 이 컨테이너 image 를 digest 로 갱신).
 # ★ image 는 최초 placeholder(:main). CI 가 돌면 @sha256:<digest> 로 교체됨.
 apiVersion: apps/v1

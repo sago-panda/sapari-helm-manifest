@@ -1,5 +1,5 @@
 # apps/networking/lb-ipam.yaml — [매니페스트형 leaf] git 디렉토리 적용
-# Cilium LB-IPAM 풀 + L2 announcement (phase 3, MetalLB 대체)
+# Cilium LB-IPAM 풀 + L2 announcement
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

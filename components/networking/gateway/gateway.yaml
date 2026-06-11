@@ -3,7 +3,7 @@
 #   - public-gateway  : sapari.ascode.click (frontend + 향후 backend /api)  → 192.168.123.201
 #   - admin-gateway   : argocd/grafana/kibana/vault/minio (Cloudflare Access) → 192.168.123.202
 # IP 고정: spec.infrastructure.annotations 가 cilium-gateway-* LB Service 에 전파 → Cilium LB-IPAM 할당.
-# 전제: cilium gatewayAPI.enabled + lb-ipam(components/networking/lb-ipam). HA 는 CiliumGatewayClassConfig 후속.
+# 전제: cilium gatewayAPI.enabled + lb-ipam(components/networking/lb-ipam).
 # ※ Cloudflare Tunnel(105 호스트)에서 각 호스트를 해당 게이트웨이 IP 로 라우팅해야 함(외부 작업).
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway

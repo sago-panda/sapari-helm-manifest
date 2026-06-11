@@ -327,9 +327,12 @@ kubectl delete ns envoy-gateway-system
 ## repo 변경 요약
 - **phase 1·2**: bootstrap/cilium-values.yaml 만 (phase 진행마다 값 갱신)
 - **phase 3**: `components/networking/lb-ipam/` + `apps/networking/lb-ipam.yaml` 신규, gateway.yaml IP 어노테이션 교체
-- **phase 4**: gateway.yaml — GatewayClass·EnvoyProxy 제거, `gatewayClassName: cilium`;
-  netpol — 노출 ns CNP 에 `fromEntities: [ingress]` 추가 (4-1.5), envoy ns 규칙은 정리 커밋에서 제거
-- HTTPRoute(`components/networking/routes/*`): **변경 없음**
+- **phase 4**: gateway.yaml — GatewayClass·EnvoyProxy 제거, `gatewayClassName: cilium`, Gateway ns `default`→`ingress`;
+  HTTPRoute 7개 parentRefs.namespace 변경; netpol — 노출 ns CNP 에 `fromEntities: [ingress]` 추가 (4-1.5)
+- **phase 4 정리 커밋**: envoy-gateway-system·ingress ns 죽은 규칙 제거, envoy PodMonitor 삭제,
+  frontend CNP 추가(컴포넌트 위치가 달라 4-1.5 에서 누락됐던 것), monitoring 19001 egress 제거
+
+> ✅ **2026-06-11 phase 1~4 전체 완료** — Calico·kube-proxy·MetalLB·Envoy Gateway 제거, Cilium 단일 스택.
 
 ## 후속(선택)
 - Hubble UI, Cilium NetworkPolicy(CRD)로 L7 정책, BGP, Cilium Ingress 대신 Gateway 유지 등은 전환 안정화 후 별도로.

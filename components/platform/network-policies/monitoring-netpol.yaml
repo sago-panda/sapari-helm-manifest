@@ -14,20 +14,11 @@ spec:
     # 없으면 같은 ns여도 ingress가 막혀 타임아웃 (egress엔 podSelector{} 있지만 ingress엔 없었음)
     - from:
         - podSelector: {}
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress
     # ECK operator → Kibana 파드 관리/헬스체크
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: elastic-system
-    # Gateway 경유 외부 진입 (Kibana 5601 HTTPRoute)
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
   egress:
     - to:
         - namespaceSelector:
@@ -44,13 +35,6 @@ spec:
           protocol: UDP
         - port: 53
           protocol: TCP
-    # Prometheus → Envoy Gateway proxy 메트릭 (PodMonitor, 19001 /stats/prometheus)
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
-      ports:
-        - { port: 19001 }
     - ports:
         - port: 443 # 외부 알림 (Slack, PagerDuty 등)
         - port: 80
@@ -64,7 +48,7 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # Cilium Gateway 진입(예약신원 ingress) — phase 4 에서 envoy-gateway-system ns 규칙 대체
+    # Gateway 진입 — Cilium Gateway 트래픽은 예약신원 ingress (ns 셀렉터 미매칭)
     - fromEntities: [ingress]
   egress:
     - toEntities: [host, remote-node]

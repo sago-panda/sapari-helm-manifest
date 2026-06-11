@@ -15,7 +15,7 @@ prometheus:
         serviceMonitorSelectorNilUsesHelmValues: false
         serviceMonitorSelector: {}
         serviceMonitorNamespaceSelector: {}
-        # PodMonitor 도 전부 줍기 (Envoy Gateway proxy PodMonitor 등)
+        # PodMonitor 도 전부 줍기
         podMonitorSelectorNilUsesHelmValues: false
         podMonitorSelector: {}
         podMonitorNamespaceSelector: {}

@@ -1,7 +1,5 @@
 # components/networking/lb-ipam/lb-ipam.yaml
-# Cilium LB-IPAM 풀 + L2 광고 — MetalLB 대체 (풀 .200~.210 동일 유지).
-# L2 리더 선출은 eTP=Local 의 백엔드 위치를 안 보므로(MetalLB 와 다름),
-# envoy fleet 이 있는 worker 로 광고 노드를 한정해 블랙홀을 방지한다.
+# Cilium LB-IPAM 풀 + L2 광고 — LoadBalancer VIP (192.168.123.200~210)
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
 metadata:
@@ -17,7 +15,6 @@ metadata:
   name: homelab-l2
 spec:
   loadBalancerIPs: true
-  interfaces: ["^wlp.*"] # 실제 노드 NIC = wlp1s0 (WiFi)
+  interfaces: ["^wlp.*"] # 노드 NIC = wlp1s0 (WiFi) — ^eth/^en 은 매칭 0 으로 전면 단절
   nodeSelector:
-    matchLabels:
-      kubernetes.io/hostname: kube-worker
+    matchLabels: {} # 전 노드 (svc eTP=Cluster 라 어느 노드든 광고/포워딩 가능)

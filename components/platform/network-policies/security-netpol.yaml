@@ -11,10 +11,6 @@ spec:
     - Egress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress
-    - from:
         - namespaceSelector: {} # 모든 ns에서 Vault 접근 허용 (앱 시크릿 읽기)
       ports:
         - port: 8200
@@ -38,7 +34,7 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # Cilium Gateway 진입(예약신원 ingress) — vault HTTPRoute, 기존 8200 허용과 동일 폭
+    # Gateway 진입(예약신원 ingress) — vault HTTPRoute(8200)
     - fromEntities: [ingress]
       toPorts:
         - ports:

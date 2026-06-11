@@ -14,15 +14,6 @@ spec:
     # 없으면 같은 ns여도 ingress 막혀 컴포넌트가 서로 못 붙음
     - from:
         - podSelector: {}
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ingress
-    # Gateway 경유 외부 진입 (argocd.ascode.click)
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: envoy-gateway-system
   egress:
     - to:
         - podSelector: {} # cicd 내부 통신
@@ -48,7 +39,7 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # Cilium Gateway 진입(예약신원 ingress) — phase 4 에서 envoy-gateway-system ns 규칙 대체
+    # Gateway 진입 — Cilium Gateway 트래픽은 예약신원 ingress (ns 셀렉터 미매칭)
     - fromEntities: [ingress]
   egress:
     - toEntities: [kube-apiserver]

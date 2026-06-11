@@ -1,26 +1,24 @@
 # bootstrap/cilium-values.yaml — Cilium CNI (bootstrap 레이어: helm 직접 설치)
-#   절차: docs/cilium-migration.md (per-node 롤링, phase 1~4). 이 파일은 그 러너북의
-#   기준 values — phase 진행에 따라 아래 [phase N] 표시 값을 갱신하고 helm upgrade 한다.
 #   CNI 는 ArgoCD 로 관리하지 않는다(네트워크 죽으면 ArgoCD 도 죽는 닭-달걀) —
 #   argocd-values.yaml 과 같은 bootstrap 계층. Cilium "정책" CRD 들만 GitOps 로 관리.
 #
-#   설치(phase 1-1):
+#   적용:
 #     helm repo add cilium https://helm.cilium.io
 #     helm upgrade --install cilium cilium/cilium --version 1.19.4 \
 #       -n kube-system -f bootstrap/cilium-values.yaml
 
-# ── 데이터패스: native routing (같은 /24 L2, 오버레이 없음 — 러너북 결정사항) ──
+# ── 데이터패스: native routing (같은 /24 L2, 오버레이 없음) ──
 ipam:
   mode: cluster-pool
   operator:
-    clusterPoolIPv4PodCIDRList: ["10.244.0.0/16"]   # 새 CIDR (롤링 마이그레이션은 기존 172.16/16 과 분리 필수)
+    clusterPoolIPv4PodCIDRList: ["10.244.0.0/16"]
     clusterPoolIPv4MaskSize: 24
 routingMode: native
 autoDirectNodeRoutes: true
 ipv4NativeRoutingCIDR: "10.244.0.0/16"
 enableIPv4Masquerade: true
 
-# ── [phase 1 완료] Cilium 단독 CNI (1-3 승격 반영, Calico 제거됨) ──
+# ── CNI: Cilium 단독 ──
 cni:
   customConf: false
   uninstall: false        # agent 재시작/업그레이드 때 CNI conf 보존
@@ -33,18 +31,18 @@ operator:
     requests: {cpu: 20m, memory: 64Mi}
     limits: {memory: 256Mi}
 
-# ── [phase 2] kube-proxy 대체 — apiserver 직접 지정 필수 (kube-proxy 없이 부트스트랩) ──
+# ── kube-proxy replacement — kube-proxy 가 없으므로 apiserver 직접 지정 필수 ──
 kubeProxyReplacement: true
 k8sServiceHost: 192.168.123.105
 k8sServicePort: 6443
 
-# ── [phase 3] LB-IPAM + L2 announcement — 풀/정책은 components/networking/lb-ipam (GitOps) ──
+# ── LB-IPAM + L2 announcement — 풀/정책은 components/networking/lb-ipam (GitOps) ──
 l2announcements:
   enabled: true
 externalIPs:
   enabled: true
 
-# ── [phase 4] Gateway API — CRD bundle v1.4.1 = Cilium 1.19 지원 버전 (4-0 검증 완료) ──
+# ── Gateway API — 사전 설치된 Gateway API CRD bundle 이 Cilium 지원 버전과 일치해야 함 ──
 gatewayAPI:
   enabled: true
 
@@ -57,7 +55,7 @@ hubble:
       requests: {cpu: 10m, memory: 64Mi}
       limits: {memory: 128Mi}
   ui:
-    enabled: true         # 내부 접근은 port-forward 부터, HTTPRoute 노출은 후속
+    enabled: true         # 내부 접근은 port-forward (HTTPRoute 미노출)
     frontend:
       resources:
         requests: {cpu: 10m, memory: 32Mi}
@@ -73,4 +71,3 @@ resources:
   limits: {memory: 768Mi}
 
 # FQDN(toFQDNs) 정책은 별도 스위치 불필요 — CiliumNetworkPolicy 에서 쓰면 DNS 프록시 자동.
-# (phase 1 완료 후 Kyverno 용 rekor/tuf/registry FQDN egress 에 사용 예정)

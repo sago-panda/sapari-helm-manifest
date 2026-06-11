@@ -1,5 +1,5 @@
 # apps/networking/gateway.yaml — [매니페스트형 leaf] git 디렉토리 적용
-# GatewayClass(eg) + Gateway(homelab-gateway). envoy-gateway/MetalLB 전제
+# Gateway(public/admin) + lb-ipam 전제 — Cilium Gateway API (GatewayClass cilium)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

@@ -2,7 +2,7 @@
 # 인프라 네임스페이스 선언.
 # k8s 1.21+ 는 모든 ns 에 kubernetes.io/metadata.name=<ns> 라벨을 자동 부여하므로
 # NetworkPolicy 의 namespaceSelector 가 별도 라벨링 없이 동작한다.
-# (envoy-gateway-system / metallb-system / kube-system 은 외부에서 관리 → 여기서 제외)
+# (kube-system 등 시스템 ns 는 외부에서 관리 → 여기서 제외)
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -29,7 +29,7 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ingress # Gateway(클러스터 진입점) 전용 — 운영자 ns/앱 ns 분리
+  name: ingress # Gateway 전용 (클러스터 진입점)
 ---
 apiVersion: v1
 kind: Namespace
