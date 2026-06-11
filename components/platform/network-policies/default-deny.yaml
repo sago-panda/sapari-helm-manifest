@@ -2,6 +2,16 @@
 # 기본 Deny-All — 인프라 ns 마다 명시적으로 적용.
 # (원본은 `for ns in ...; kubectl apply -n $ns` 루프였음 → GitOps 에선 ns 를 명시한
 #  매니페스트로 펼친다. 각 ns 의 *-netpol 이 필요한 통신만 다시 허용.)
+# 주의: deny 는 해당 ns 의 허용 netpol 과 한 쌍 — 허용 없는 ns(ingress, longhorn-system 등)에 추가 금지.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
