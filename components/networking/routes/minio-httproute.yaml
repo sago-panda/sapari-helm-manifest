@@ -8,7 +8,7 @@ metadata:
 spec:
   parentRefs:
     - name: admin-gateway
-      namespace: default
+      namespace: ingress
   hostnames:
     - minio.ascode.click
   rules:
@@ -24,7 +24,7 @@ metadata:
 spec:
   parentRefs:
     - name: public-gateway # 이미지 업/다운 경로라 공개(콘솔 minio.ascode.click 은 admin 유지)
-      namespace: default
+      namespace: ingress
   hostnames:
     - storage.ascode.click
   rules:

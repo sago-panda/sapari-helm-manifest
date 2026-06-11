@@ -1,31 +1,20 @@
 # components/networking/gateway/gateway.yaml
-# 공개(public) / 내부관리(admin) 2-게이트웨이 분리. 각자 독립 Envoy fleet + MetalLB IP.
+# 공개(public) / 내부관리(admin) 2-게이트웨이 분리. Cilium Gateway API (GatewayClass cilium).
 #   - public-gateway  : sapari.ascode.click (frontend + 향후 backend /api)  → 192.168.123.201
 #   - admin-gateway   : argocd/grafana/kibana/vault/minio (Cloudflare Access) → 192.168.123.202
-# IP 고정: spec.infrastructure.annotations 가 proxy LoadBalancer Service 에 전파 → Cilium LB-IPAM 이 할당.
-# 전제: envoy-gateway + Cilium LB-IPAM(components/networking/lb-ipam, pool .200-210).
+# IP 고정: spec.infrastructure.annotations 가 cilium-gateway-* LB Service 에 전파 → Cilium LB-IPAM 할당.
+# 전제: cilium gatewayAPI.enabled + lb-ipam(components/networking/lb-ipam). HA 는 CiliumGatewayClassConfig 후속.
 # ※ Cloudflare Tunnel(105 호스트)에서 각 호스트를 해당 게이트웨이 IP 로 라우팅해야 함(외부 작업).
-apiVersion: gateway.networking.k8s.io/v1
-kind: GatewayClass
-metadata:
-  name: eg
-spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
----
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: public-gateway
-  namespace: default
+  namespace: ingress
 spec:
-  gatewayClassName: eg
+  gatewayClassName: cilium
   infrastructure:
     annotations:
       io.cilium/lb-ipam-ips: "192.168.123.201"
-    parametersRef: # public 만 HA(replicas 2) — 아래 EnvoyProxy 참조 (admin 은 기본 1)
-      group: gateway.envoyproxy.io
-      kind: EnvoyProxy
-      name: public-proxy
   listeners:
     - name: http
       protocol: HTTP
@@ -43,9 +32,9 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: admin-gateway
-  namespace: default
+  namespace: ingress
 spec:
-  gatewayClassName: eg
+  gatewayClassName: cilium
   infrastructure:
     annotations:
       io.cilium/lb-ipam-ips: "192.168.123.202"
@@ -59,16 +48,3 @@ spec:
           selector:
             matchExpressions:
               - { key: kubernetes.io/metadata.name, operator: In, values: [cicd, monitoring, security, storage] }
----
-# public-gateway 전용 — HA(replicas 2). admin 은 EnvoyProxy 미참조 → 기본 1.
-apiVersion: gateway.envoyproxy.io/v1alpha1
-kind: EnvoyProxy
-metadata:
-  name: public-proxy
-  namespace: default # Gateway(infrastructure.parametersRef)와 같은 ns
-spec:
-  provider:
-    type: Kubernetes
-    kubernetes:
-      envoyDeployment:
-        replicas: 2

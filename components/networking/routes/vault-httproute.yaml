@@ -10,7 +10,7 @@ metadata:
 spec:
   parentRefs:
     - name: admin-gateway
-      namespace: default
+      namespace: ingress
   hostnames:
     - vault.ascode.click
   rules:

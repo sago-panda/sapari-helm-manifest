@@ -279,10 +279,18 @@ kubectl -n kube-system rollout restart deploy/cilium-operator
 kubectl get gatewayclass cilium    # 생성 확인
 ```
 
+### 4-1.5. netpol 선행 조건 (📝 repo — 컷오버 **전에** push)
+Cilium Gateway 는 백엔드로 향하는 트래픽의 출처가 envoy Pod(ns 셀렉터 매칭)이 아니라
+**예약신원 `ingress`** 가 된다 — 기존 `envoy-gateway-system` ns 허용 규칙이 빗나가 default-deny 에 막힘.
+노출 ns(cicd/keycloak/monitoring/security/storage)의 CNP 에 `fromEntities: [ingress]` 를 추가한다.
+(미리 push 해도 무해 — 컷오버 전엔 매칭될 트래픽이 없음. envoy ns 규칙 제거는 4-3 후 정리 커밋에서.)
+
 ### 4-2. Gateway 매니페스트 전환 (📝 repo 변경 — `components/networking/gateway/gateway.yaml`)
 변경 요지:
 - `GatewayClass`: `eg`(Envoy) → **삭제**, Cilium이 만드는 `cilium` 클래스 사용
 - 두 Gateway의 `gatewayClassName: eg` → `cilium`
+- Gateway ns: `default` → **`ingress`** (운영자/앱 ns 분리 — 빈 채로 있던 ingress ns 를 제 용도로).
+  HTTPRoute 7개의 `parentRefs.namespace` 도 함께 변경 (`components/frontend/httproute.yaml` 포함)
 - `infrastructure.parametersRef`(EnvoyProxy 참조) **제거**, `EnvoyProxy` 오브젝트 **삭제**
 - LB IP 고정: MetalLB 어노테이션 → **Cilium LB-IPAM 어노테이션**(`io.cilium/lb-ipam-ips`)으로 교체.
   `.201`/`.202` 그대로 유지.
@@ -317,9 +325,11 @@ kubectl delete ns envoy-gateway-system
 | 관측 | Hubble (+relay) |
 
 ## repo 변경 요약
-- **phase 1·2·3**: 변경 없음 (전부 부트스트랩/cilium-values.yaml 영역)
-- **phase 4**: `components/networking/gateway/gateway.yaml` — GatewayClass·gatewayClassName·EnvoyProxy 제거, LB IP 어노테이션 교체
-- HTTPRoute(`components/networking/routes/*`), NetworkPolicy(`components/platform/network-policies/*`): **변경 없음**
+- **phase 1·2**: bootstrap/cilium-values.yaml 만 (phase 진행마다 값 갱신)
+- **phase 3**: `components/networking/lb-ipam/` + `apps/networking/lb-ipam.yaml` 신규, gateway.yaml IP 어노테이션 교체
+- **phase 4**: gateway.yaml — GatewayClass·EnvoyProxy 제거, `gatewayClassName: cilium`;
+  netpol — 노출 ns CNP 에 `fromEntities: [ingress]` 추가 (4-1.5), envoy ns 규칙은 정리 커밋에서 제거
+- HTTPRoute(`components/networking/routes/*`): **변경 없음**
 
 ## 후속(선택)
 - Hubble UI, Cilium NetworkPolicy(CRD)로 L7 정책, BGP, Cilium Ingress 대신 Gateway 유지 등은 전환 안정화 후 별도로.

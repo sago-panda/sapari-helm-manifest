@@ -11,7 +11,7 @@ metadata:
 spec:
   parentRefs:
     - name: public-gateway
-      namespace: default
+      namespace: ingress
   hostnames:
     - sapari.ascode.click
   rules:

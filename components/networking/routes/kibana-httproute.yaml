@@ -10,7 +10,7 @@ metadata:
 spec:
   parentRefs:
     - name: admin-gateway
-      namespace: default
+      namespace: ingress
   hostnames:
     - kibana.ascode.click
   rules:

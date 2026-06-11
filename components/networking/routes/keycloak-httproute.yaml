@@ -9,7 +9,7 @@ metadata:
 spec:
   parentRefs:
     - name: public-gateway
-      namespace: default
+      namespace: ingress
   hostnames:
     - auth.ascode.click
   rules:
