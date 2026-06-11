@@ -38,6 +38,11 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
+    # Cilium Gateway 진입(예약신원 ingress) — vault HTTPRoute, 기존 8200 허용과 동일 폭
+    - fromEntities: [ingress]
+      toPorts:
+        - ports:
+            - { port: "8200", protocol: TCP }
     - fromEntities: [kube-apiserver, host, remote-node]
       toPorts:
         - ports:

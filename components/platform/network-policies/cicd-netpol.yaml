@@ -47,5 +47,8 @@ metadata:
   namespace: cicd
 spec:
   endpointSelector: {}
+  ingress:
+    # Cilium Gateway 진입(예약신원 ingress) — phase 4 에서 envoy-gateway-system ns 규칙 대체
+    - fromEntities: [ingress]
   egress:
     - toEntities: [kube-apiserver]
