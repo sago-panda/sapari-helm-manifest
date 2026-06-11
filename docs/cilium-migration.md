@@ -243,9 +243,9 @@ Cilium 정책 CRD 는 GitOps 관리 원칙에 따라 leaf App(`apps/networking/l
 - sync 후 `.201/.202` 가 Cilium 풀에서도 동일 할당되는지 확인하고 MetalLB 제거:
 ```bash
 kubectl get ciliumloadbalancerippool homelab-pool   # IPs Available/Used 확인
-helm uninstall metallb -n metallb-system    # (설치 방식에 맞게)
-kubectl delete ipaddresspool homelab-pool -n metallb-system
-kubectl delete l2advertisement homelab-l2 -n metallb-system
+# 설치가 raw 매니페스트(v0.14.9, 2026-03-15)였으므로 같은 파일로 제거
+# (ns·CRD 까지 삭제되며 내부의 IPAddressPool/L2Advertisement 도 함께 정리됨)
+kubectl delete -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
 ```
 - 외부 접속 정상 확인 후 `metallb.universe.tf/loadBalancerIPs` 어노테이션 제거 (📝 repo 후속 정리).
 

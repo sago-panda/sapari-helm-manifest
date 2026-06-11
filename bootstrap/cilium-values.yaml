@@ -44,9 +44,9 @@ l2announcements:
 externalIPs:
   enabled: true
 
-# ── [phase 4] Gateway API (Cilium ↔ Gateway API CRD 버전 매트릭스 확인 후) ──
+# ── [phase 4] Gateway API — CRD bundle v1.4.1 = Cilium 1.19 지원 버전 (4-0 검증 완료) ──
 gatewayAPI:
-  enabled: false
+  enabled: true
 
 # ── 관측 (Hubble — netpol drop 디버깅에 바로 사용) ──
 hubble:
