@@ -2,11 +2,18 @@
 # Promtail은 EOL → 후속인 Grafana Alloy로 파드 로그 수집 → Loki push.
 # DaemonSet으로 전 노드에서 수집. (Fluentd 대체)
 alloy:
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
   configMap:
     content: |-
-      // 클러스터의 모든 파드 발견
+      // 자기 노드의 파드만 발견 — 필터 없으면 DS 인스턴스마다 전 클러스터를 tail (중복 수집 + apiserver 부하)
       discovery.kubernetes "pods" {
         role = "pod"
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + sys.env("NODE_NAME")
+        }
       }
 
       // 메타데이터를 Loki 라벨로 매핑 (각 속성은 줄바꿈으로 구분 — 한 줄에 두 개 X)
@@ -45,7 +52,8 @@ alloy:
       }
   resources:
     requests: { cpu: 50m, memory: 128Mi }
-    limits:   { cpu: 200m, memory: 256Mi }
+    # 재연결 폭주(apiserver 연결 유실 후 tailer 일괄 복구) 시 TLS 핸드셰이크가 몰려 200m 으론 질식
+    limits:   { cpu: 500m, memory: 512Mi }
 
 controller:
   type: daemonset
