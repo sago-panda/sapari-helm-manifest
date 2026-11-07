@@ -25,7 +25,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: web
-          image: registry.gitlab.com/sagopanda/sapari-fe@sha256:b6b7f775bba6ae047fe530dd63eb8fb9f90c57ac9c8403c7d7533521d3c7eb59 # ← CI(bump)가 @sha256:digest 로 갱신
+          image: registry.gitlab.com/sagopanda/sapari-fe@sha256:09c7644c414a0cfb3cf26eea0bdedf15fb457be0936919d0411f6c665cd19e59 # ← CI(bump)가 @sha256:digest 로 갱신
           ports:
             - {name: http, containerPort: 8080}
           securityContext:
